@@ -250,49 +250,7 @@ BACKEND_PORT=8000
 
 ---
 
-## 📅 4-Week Development Plan
 
-```
-Week 1 ────────► Week 2 ────────► Mid-Project Review ────────► Week 3 ────────► Week 4 ────────► Final Review
-[Ingestion &     [Agent Graph     [Reasoning & Vision          [Self-RAG &      [Observability   [Production
- API Scaffold]    & Chat UI]       Audit]                       Guardrails]      & Citations]     System]
-```
-
-### 🗓️ Week 1: Multi-Modal Ingestion & API Scaffolding
-- **AI Engineering**:
-  - Build PDF parsing pipeline extracting text, financial tables, and embedded images.
-  - Generate dual embeddings (text chunk embeddings + CLIP image embeddings).
-  - Store multi-modal vectors and metadata into Qdrant.
-- **Full-Stack Integration**:
-  - Build asynchronous FastAPI endpoints for document upload, processing status, and querying.
-
-### 🗓️ Week 2: Agentic Architecture & Dynamic UI
-- **AI Engineering**:
-  - Implement LangGraph state machine with a centralized `Supervisor` node.
-  - Implement specialized sub-agents: `SearchAgent`, `VisionAgent`, and `SQLAgent`.
-- **Full-Stack Integration**:
-  - Build Streamlit interface capable of streaming agent thought processes and displaying referenced charts alongside textual outputs.
-
-### 🔍 Mid-Project Review Checkpoints
-- [x] **Reasoning Audit**: Demonstrate the Supervisor correctly routes between vector search vs. SQL query execution based on prompt intent.
-- [x] **Vision Accuracy Check**: Verify the VLM extracts accurate numerical values from financial bar charts and data tables.
-
-### 🗓️ Week 3: Self-Correction Loop & NeMo Guardrails
-- **AI Engineering**:
-  - Implement **Self-RAG** mechanism: evaluate retrieval relevance, detect insufficient context, and autonomously trigger query rewrites.
-- **Full-Stack Integration**:
-  - Configure **NeMo Guardrails** to restrict answers strictly to the scope of ingested documents and block off-topic queries.
-
-### 🗓️ Week 4: Observability, Evaluation & Citation UI
-- **AI Engineering**:
-  - Integrate **Langfuse** for end-to-end trace logging, latency tracking, and token usage telemetry.
-- **Full-Stack Integration**:
-  - Refine Streamlit UI with interactive citation links enabling analysts to click claims and preview exact PDF pages and chart figures.
-
-### 🏁 Final Milestone
-- Deliver a production-ready, resilient, hallucination-resistant enterprise search and analytical memo generator.
-
----
 
 ## 🛡️ Evaluation, Observability & Guardrails
 
