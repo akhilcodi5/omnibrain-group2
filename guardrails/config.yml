@@ -1,0 +1,15 @@
+# NeMo Guardrails Configuration
+models:
+  - type: main
+    engine: openai
+    model: gpt-4o
+
+rails:
+  input:
+    flows:
+      - check off topic
+      - check jailbreak attempt
+  output:
+    flows:
+      - check hallucination
+      - verify grounded context
