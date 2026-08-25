@@ -23,6 +23,8 @@ from agents.vision_prompts import (
     TABLE_EXTRACTION_PROMPT,
     VISION_SYSTEM_PROMPT,
 )
+from app.services.image_preprocessor import ImagePreprocessor
+from app.services.vlm_engine import BaseVisionEngine, get_vision_engine
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +32,13 @@ logger = logging.getLogger(__name__)
 class VisionService:
     """Service to handle Vision-Language Model inference for charts, tables, and visual figures."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o"):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model_name = model or os.getenv("OPENAI_MODEL", "gpt-4o")
+    def __init__(
+        self, 
+        engine: Optional[BaseVisionEngine] = None,
+        provider: Optional[str] = None,
+    ):
+        self.engine = engine or get_vision_engine(provider)
+        self.preprocessor = ImagePreprocessor()
 
     @staticmethod
     def encode_image_to_base64(image_input: Union[str, bytes, Image.Image]) -> str:
@@ -49,7 +55,6 @@ class VisionService:
 
         elif isinstance(image_input, Image.Image):
             buffered = BytesIO()
-            # Convert RGBA to RGB if needed before saving as JPEG
             if image_input.mode in ("RGBA", "P"):
                 image_input = image_input.convert("RGB")
             image_input.save(buffered, format="JPEG", quality=90)
@@ -66,47 +71,46 @@ class VisionService:
                 return f"image/{ext[1:]}"
         return "image/jpeg"
 
-    def build_multimodal_message(
-        self, 
-        base64_image: str, 
-        prompt_text: str, 
-        media_type: str = "image/jpeg"
-    ) -> list:
-        """Build standard multimodal message payload for OpenAI API / LangChain."""
-        return [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{media_type};base64,{base64_image}",
-                            "detail": "high",
-                        },
-                    },
-                ],
-            }
-        ]
-
     async def analyze_figure(
         self, 
         request: VisionExtractionRequest
     ) -> VisionExtractionResponse:
-        """Perform multimodal extraction and reasoning on a given figure."""
+        """Perform multimodal extraction and reasoning on a given figure with optional preprocessing."""
         try:
-            # 1. Resolve image to base64
-            if request.image_base64:
+            # 1. Load image as PIL for optional cropping and preprocessing
+            pil_image = None
+            if request.image_path and os.path.exists(request.image_path):
+                pil_image = Image.open(request.image_path)
+            elif request.image_base64:
+                raw_bytes = base64.b64decode(request.image_base64)
+                pil_image = Image.open(BytesIO(raw_bytes))
+
+            # Apply sub-bounding box crop if specified
+            if pil_image and request.crop_box:
+                pil_image = self.preprocessor.crop_bounding_box(
+                    pil_image,
+                    box=(
+                        int(request.crop_box.xmin),
+                        int(request.crop_box.ymin),
+                        int(request.crop_box.xmax),
+                        int(request.crop_box.ymax),
+                    ),
+                    normalized=request.crop_box.is_normalized,
+                )
+
+            # Preprocess image for VLM readability & token scaling
+            if pil_image:
+                pil_image = self.preprocessor.resize_for_vlm(pil_image)
+                b64_img = self.encode_image_to_base64(pil_image)
+            elif request.image_base64:
                 b64_img = request.image_base64
-            elif request.image_path:
-                b64_img = self.encode_image_to_base64(request.image_path)
             else:
-                raise ValueError("No valid image input (base64 or path) provided in request.")
+                raise ValueError("No valid image input provided in request.")
 
             media_type = self.get_image_media_type(request.image_path)
             context = request.query_context or "General quantitative extraction and financial analysis."
 
-            # 2. Select prompt template based on expected type
+            # 2. Select prompt template
             if request.expected_type == ChartType.TABLE:
                 prompt_text = TABLE_EXTRACTION_PROMPT.format(query_context=context)
             elif request.expected_type in (ChartType.BAR, ChartType.LINE, ChartType.PIE, ChartType.AREA):
@@ -114,36 +118,36 @@ class VisionService:
             else:
                 prompt_text = FIGURE_REASONING_PROMPT.format(query_context=context)
 
-            # 3. Call VLM if API key is present, otherwise provide fallback mock for offline dev
-            if not self.api_key or self.api_key.startswith("your_"):
-                logger.warning("OPENAI_API_KEY not configured. Returning structured placeholder result.")
-                return self._create_mock_response(request, context)
-
-            # Execute real VLM inference with OpenAI client
-            from openai import AsyncOpenAI
-            client = AsyncOpenAI(api_key=self.api_key)
-
-            messages = [
-                {"role": "system", "content": VISION_SYSTEM_PROMPT},
-                *self.build_multimodal_message(b64_img, prompt_text, media_type),
-            ]
-
-            response = await client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                max_tokens=2000,
-                temperature=0.1,
+            # 3. Call modular VLM Engine
+            response = await self.engine.generate_response(
+                base64_image=b64_img,
+                prompt=prompt_text,
+                system_prompt=VISION_SYSTEM_PROMPT,
+                media_type=media_type,
             )
 
-            raw_content = response.choices[0].message.content or ""
+            # 4. If a structured chart was requested, also attempt structured schema extraction
+            chart_data = None
+            if request.expected_type in (ChartType.BAR, ChartType.LINE, ChartType.PIE, ChartType.AREA):
+                try:
+                    structured_json = await self.engine.extract_structured_json(
+                        base64_image=b64_img,
+                        prompt=CHART_EXTRACTION_PROMPT.format(query_context=context),
+                        system_prompt=VISION_SYSTEM_PROMPT,
+                        media_type=media_type,
+                    )
+                    if structured_json and "series" in structured_json:
+                        chart_data = ExtractedChartData.model_validate(structured_json)
+                except Exception as ex:
+                    logger.debug(f"Structured chart extraction fallback: {ex}")
 
             return VisionExtractionResponse(
-                image_id=os.path.basename(request.image_path) if request.image_path else "memory_figure",
-                raw_markdown=raw_content,
+                image_id=os.path.basename(request.image_path) if request.image_path else "figure_asset",
+                chart_data=chart_data,
+                raw_markdown=response.get("content", ""),
                 metadata={
-                    "model": self.model_name,
-                    "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                    "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                    "model": response.get("model", "unknown"),
+                    "usage": response.get("usage", {}),
                 }
             )
 
@@ -154,40 +158,36 @@ class VisionService:
                 metadata={"error": str(e)}
             )
 
-    def _create_mock_response(
-        self, 
-        request: VisionExtractionRequest, 
-        context: str
-    ) -> VisionExtractionResponse:
-        """Create structured placeholder response when running locally without API keys."""
-        mock_chart = ExtractedChartData(
-            title="Quarterly Revenue & Margin Breakdown",
-            chart_type=ChartType.BAR,
-            x_axis_label="Fiscal Quarter",
-            y_axis_label="Revenue (USD Millions)",
-            series=[
-                ChartSeries(
-                    series_name="Total Revenue",
-                    data_points=[
-                        DataPoint(label="Q1 FY24", value=120.5, raw_value="$120.5M", unit="USD Millions"),
-                        DataPoint(label="Q2 FY24", value=135.2, raw_value="$135.2M", unit="USD Millions"),
-                        DataPoint(label="Q3 FY24", value=148.8, raw_value="$148.8M", unit="USD Millions"),
-                        DataPoint(label="Q4 FY24", value=162.0, raw_value="$162.0M", unit="USD Millions"),
-                    ]
-                )
-            ],
-            summary="Revenue demonstrated consistent sequential quarter-over-quarter growth throughout FY24.",
-            key_insights=[
-                "FY24 total revenue reached $566.5M, a +21% YoY increase.",
-                "Q4 was the strongest quarter with $162.0M in revenue."
-            ],
-            notable_anomalies=[],
-            confidence_score=0.95
-        )
+    async def extract_structured_chart(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+    ) -> ExtractedChartData:
+        """Dedicated method returning guaranteed ExtractedChartData schema."""
+        b64_img = self.encode_image_to_base64(image_input)
+        context = query_context or "Extract all series, labels, units, and values from this chart."
+        prompt = CHART_EXTRACTION_PROMPT.format(query_context=context)
 
-        return VisionExtractionResponse(
-            image_id=os.path.basename(request.image_path) if request.image_path else "sample_figure",
-            chart_data=mock_chart,
-            raw_markdown=f"### Visual Analysis: Quarterly Revenue Trend\n\n- **Context**: {context}\n- **Summary**: Total Revenue expanded from $120.5M in Q1 to $162.0M in Q4 FY24.\n- **Trend**: Positive linear trajectory with strong Q4 acceleration.",
-            metadata={"status": "mock_mode", "note": "Set OPENAI_API_KEY for live VLM responses"}
+        raw_json = await self.engine.extract_structured_json(
+            base64_image=b64_img,
+            prompt=prompt,
+            system_prompt=VISION_SYSTEM_PROMPT,
         )
+        return ExtractedChartData.model_validate(raw_json)
+
+    async def extract_structured_table(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+    ) -> ExtractedTableData:
+        """Dedicated method returning guaranteed ExtractedTableData schema."""
+        b64_img = self.encode_image_to_base64(image_input)
+        context = query_context or "Extract all columns, headers, rows, and key financial figures."
+        prompt = TABLE_EXTRACTION_PROMPT.format(query_context=context)
+
+        raw_json = await self.engine.extract_structured_json(
+            base64_image=b64_img,
+            prompt=prompt,
+            system_prompt=VISION_SYSTEM_PROMPT,
+        )
+        return ExtractedTableData.model_validate(raw_json)

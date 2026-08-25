@@ -1,0 +1,275 @@
+"""Multi-Engine VLM Interface supporting OpenAI GPT-4o, local LLaVA (Ollama), and Mocking."""
+
+import abc
+import json
+import logging
+import os
+from typing import Any, Dict, List, Optional
+import httpx
+
+from app.models.vision_schemas import (
+    ChartSeries,
+    ChartType,
+    DataPoint,
+    ExtractedChartData,
+    ExtractedTableData,
+    VLMProviderType,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class BaseVisionEngine(abc.ABC):
+    """Abstract Base Class for Vision-Language Model inference engines."""
+
+    @abc.abstractmethod
+    async def generate_response(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        """Generate unstructured markdown/text response from image and prompt."""
+        pass
+
+    @abc.abstractmethod
+    async def extract_structured_json(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        """Generate guaranteed structured JSON dictionary conforming to extraction schema."""
+        pass
+
+
+class OpenAIVisionEngine(BaseVisionEngine):
+    """VLM Engine implementation using OpenAI GPT-4o / GPT-4o-mini."""
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o"):
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o")
+
+    async def generate_response(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=self.api_key)
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{media_type};base64,{base64_image}",
+                        "detail": "high",
+                    },
+                },
+            ],
+        })
+
+        response = await client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=2000,
+            temperature=temperature,
+        )
+
+        return {
+            "content": response.choices[0].message.content or "",
+            "usage": {
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+            },
+            "model": self.model,
+        }
+
+    async def extract_structured_json(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=self.api_key)
+
+        instruction = f"{prompt}\n\nIMPORTANT: Respond ONLY with a valid JSON object matching the requested schema."
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": instruction},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{media_type};base64,{base64_image}",
+                        "detail": "high",
+                    },
+                },
+            ],
+        })
+
+        response = await client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.0,
+        )
+
+        content = response.choices[0].message.content or "{}"
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse JSON from VLM output: {content}")
+            return {"raw_text": content, "error": "Invalid JSON response"}
+
+
+class OllamaLLaVAEngine(BaseVisionEngine):
+    """Local Open-Source VLM Engine for LLaVA / Llama-3.2-Vision hosted via Ollama."""
+
+    def __init__(self, base_url: str = "http://localhost:11434", model: str = "llava:13b"):
+        self.base_url = os.getenv("OLLAMA_HOST", base_url)
+        self.model = os.getenv("OLLAMA_VISION_MODEL", model)
+
+    async def generate_response(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "system": system_prompt or "",
+                "images": [base64_image],
+                "stream": False,
+                "options": {"temperature": temperature},
+            }
+            try:
+                res = await client.post(f"{self.base_url}/api/generate", json=payload)
+                res.raise_for_status()
+                data = res.json()
+                return {
+                    "content": data.get("response", ""),
+                    "usage": {"eval_count": data.get("eval_count", 0)},
+                    "model": self.model,
+                }
+            except Exception as e:
+                logger.error(f"Ollama LLaVA inference error: {str(e)}")
+                raise
+
+    async def extract_structured_json(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        instruction = f"{prompt}\nReturn strictly JSON format."
+        result = await self.generate_response(
+            base64_image, instruction, system_prompt, media_type, temperature=0.0
+        )
+        content = result.get("content", "{}")
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # Simple bracket extraction fallback
+            start = content.find("{")
+            end = content.rfind("}")
+            if start != -1 and end != -1:
+                return json.loads(content[start:end+1])
+            return {"raw_text": content}
+
+
+class MockVisionEngine(BaseVisionEngine):
+    """Deterministic Mock VLM Engine for offline local development and unit tests."""
+
+    async def generate_response(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        return {
+            "content": (
+                "### Mock Vision Analysis\n\n"
+                "- **Figure Type**: Bar Chart\n"
+                "- **Key Metric**: Total Operating Revenue grew by 18.5% YoY.\n"
+                "- **Observations**: Q1 ($110M), Q2 ($125M), Q3 ($140M), Q4 ($155M)."
+            ),
+            "usage": {"prompt_tokens": 120, "completion_tokens": 65},
+            "model": "mock-vlm-engine",
+        }
+
+    async def extract_structured_json(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        return {
+            "title": "Quarterly Operating Performance",
+            "chart_type": "bar",
+            "x_axis_label": "Quarter",
+            "y_axis_label": "USD Millions",
+            "series": [
+                {
+                    "series_name": "Revenue",
+                    "data_points": [
+                        {"label": "Q1", "value": 110.0, "raw_value": "$110M", "unit": "USD Millions"},
+                        {"label": "Q2", "value": 125.0, "raw_value": "$125M", "unit": "USD Millions"},
+                        {"label": "Q3", "value": 140.0, "raw_value": "$140M", "unit": "USD Millions"},
+                        {"label": "Q4", "value": 155.0, "raw_value": "$155M", "unit": "USD Millions"},
+                    ],
+                }
+            ],
+            "summary": "Revenue increased steadily over four quarters.",
+            "key_insights": ["Annual revenue reached $530M", "Q4 was highest performing quarter"],
+            "notable_anomalies": [],
+            "confidence_score": 0.98,
+        }
+
+
+def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
+    """Factory function to retrieve the configured Vision-Language Model Engine."""
+    provider_str = (provider or os.getenv("VLM_PROVIDER", "openai")).lower()
+
+    if provider_str in (VLMProviderType.OPENAI.value, "openai"):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            logger.info("OpenAI API key unconfigured. Defaulting to MockVisionEngine.")
+            return MockVisionEngine()
+        return OpenAIVisionEngine()
+
+    elif provider_str in (VLMProviderType.LLAVA_OLLAMA.value, "llava", "ollama"):
+        return OllamaLLaVAEngine()
+
+    elif provider_str in (VLMProviderType.MOCK.value, "mock"):
+        return MockVisionEngine()
+
+    logger.warning(f"Unknown VLM provider '{provider_str}'. Falling back to OpenAIVisionEngine.")
+    return OpenAIVisionEngine()

@@ -3,10 +3,14 @@
 import logging
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
+from PIL import Image
 
 from agents.state import AgentState
 from app.models.vision_schemas import (
+    BoundingBox,
     ChartType,
+    ExtractedChartData,
+    ExtractedTableData,
     VisionExtractionRequest,
     VisionExtractionResponse,
 )
@@ -23,9 +27,10 @@ class VisionAgent:
 
     async def analyze_visual_asset(
         self,
-        image_input: Union[str, bytes],
+        image_input: Union[str, bytes, Image.Image],
         query_context: Optional[str] = None,
         expected_type: Optional[ChartType] = None,
+        crop_box: Optional[BoundingBox] = None,
     ) -> VisionExtractionResponse:
         """Analyze a visual asset (chart, table, diagram) with contextual reasoning."""
         if isinstance(image_input, str) and image_input.startswith(("data:image", "http://", "https://")):
@@ -33,12 +38,14 @@ class VisionAgent:
                 image_base64=image_input,
                 query_context=query_context,
                 expected_type=expected_type,
+                crop_box=crop_box,
             )
         elif isinstance(image_input, str):
             request = VisionExtractionRequest(
                 image_path=image_input,
                 query_context=query_context,
                 expected_type=expected_type,
+                crop_box=crop_box,
             )
         else:
             base64_str = self.service.encode_image_to_base64(image_input)
@@ -46,33 +53,54 @@ class VisionAgent:
                 image_base64=base64_str,
                 query_context=query_context,
                 expected_type=expected_type,
+                crop_box=crop_box,
             )
 
         return await self.service.analyze_figure(request)
 
     async def extract_chart_metrics(
         self, 
-        image_path: str, 
-        query_context: Optional[str] = None
+        image_input: Union[str, bytes, Image.Image], 
+        query_context: Optional[str] = None,
+        crop_box: Optional[BoundingBox] = None,
     ) -> VisionExtractionResponse:
         """Specialized extraction for quantitative bar/line/pie charts."""
         return await self.analyze_visual_asset(
-            image_input=image_path,
+            image_input=image_input,
             query_context=query_context,
             expected_type=ChartType.BAR,
+            crop_box=crop_box,
         )
 
     async def extract_table_matrix(
         self, 
-        image_path: str, 
-        query_context: Optional[str] = None
+        image_input: Union[str, bytes, Image.Image], 
+        query_context: Optional[str] = None,
+        crop_box: Optional[BoundingBox] = None,
     ) -> VisionExtractionResponse:
         """Specialized extraction for balance sheet and tabular financial figures."""
         return await self.analyze_visual_asset(
-            image_input=image_path,
+            image_input=image_input,
             query_context=query_context,
             expected_type=ChartType.TABLE,
+            crop_box=crop_box,
         )
+
+    async def extract_structured_chart_data(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+    ) -> ExtractedChartData:
+        """Extract typed chart series with guaranteed Pydantic validation."""
+        return await self.service.extract_structured_chart(image_input, query_context)
+
+    async def extract_structured_table_data(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+    ) -> ExtractedTableData:
+        """Extract typed financial table matrix with guaranteed Pydantic validation."""
+        return await self.service.extract_structured_table(image_input, query_context)
 
 
 async def vision_node(state: AgentState) -> Dict[str, Any]:

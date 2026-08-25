@@ -1,7 +1,7 @@
-"""Pydantic schemas for Multi-Modal Vision extraction and reasoning."""
+"""Pydantic schemas for Multi-Modal Vision extraction, bounding boxes, and table reasoning."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
 
@@ -17,6 +17,27 @@ class ChartType(str, Enum):
     DIAGRAM = "diagram"
     INFOGRAPHIC = "infographic"
     UNKNOWN = "unknown"
+
+
+class VLMProviderType(str, Enum):
+    """Supported Vision-Language Model providers."""
+    OPENAI = "openai"
+    LLAVA_OLLAMA = "llava_ollama"
+    ANTHROPIC = "anthropic"
+    MOCK = "mock"
+
+
+class BoundingBox(BaseModel):
+    """Normalized or pixel bounding box coordinates for visual regions in documents."""
+    ymin: float = Field(..., description="Top coordinate (0.0 - 1.0 or pixel integer)")
+    xmin: float = Field(..., description="Left coordinate (0.0 - 1.0 or pixel integer)")
+    ymax: float = Field(..., description="Bottom coordinate (0.0 - 1.0 or pixel integer)")
+    xmax: float = Field(..., description="Right coordinate (0.0 - 1.0 or pixel integer)")
+    is_normalized: bool = Field(default=True, description="Whether coordinates are normalized between 0.0 and 1.0")
+
+    def to_tuple(self) -> Tuple[float, float, float, float]:
+        """Return box as (xmin, ymin, xmax, ymax)."""
+        return (self.xmin, self.ymin, self.xmax, self.ymax)
 
 
 class DataPoint(BaseModel):
@@ -49,6 +70,16 @@ class ExtractedChartData(BaseModel):
         le=1.0, 
         description="Confidence score (0.0 to 1.0) of the visual extraction"
     )
+    bounding_box: Optional[BoundingBox] = Field(None, description="Coordinates of chart on source page")
+
+
+class TableCell(BaseModel):
+    """Individual cell in an extracted financial table."""
+    row_idx: int = Field(..., description="Row index (0-based)")
+    col_idx: int = Field(..., description="Column index (0-based)")
+    value: str = Field(..., description="Text content of the cell")
+    numeric_value: Optional[float] = Field(None, description="Parsed numeric value if cell is numeric")
+    is_header: bool = Field(default=False, description="Whether this cell is part of the table header")
 
 
 class ExtractedTableData(BaseModel):
@@ -63,6 +94,7 @@ class ExtractedTableData(BaseModel):
     )
     currency: Optional[str] = Field(None, description="Currency symbol or code (e.g. 'USD', 'EUR')")
     scale: Optional[str] = Field(None, description="Scale of figures (e.g. 'Thousands', 'Millions', 'Billions')")
+    bounding_box: Optional[BoundingBox] = Field(None, description="Coordinates of table on source page")
 
 
 class VisionExtractionRequest(BaseModel):
@@ -77,6 +109,10 @@ class VisionExtractionRequest(BaseModel):
     expected_type: Optional[ChartType] = Field(
         None, 
         description="Hint for expected visual type (e.g. TABLE, BAR, LINE)"
+    )
+    crop_box: Optional[BoundingBox] = Field(
+        None, 
+        description="Optional sub-bounding box to crop before VLM inference"
     )
 
 
