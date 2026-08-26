@@ -1,50 +1,72 @@
-"""Vision-Language Model (VLM) Agent for interpreting charts, graphs, and financial tables."""
+"""Visual Analytics & Multi-Modal Tool Integrator Agent.
+
+Handles downstream reasoning, mathematical trend analysis, cross-modal grounding verification,
+and executive memo formatting for visual figures in LangGraph.
+"""
 
 import logging
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
 from PIL import Image
 
+from agents.cross_modal_verifier import CrossModalVerifier
 from agents.state import AgentState
+from agents.visual_analytics import VisualAnalyticsEngine
+from agents.visual_tools import VisualMemoFormatter
 from app.models.vision_schemas import (
     BoundingBox,
     ChartType,
+    CrossModalVerificationReport,
     ExtractedChartData,
     ExtractedTableData,
     VisionExtractionRequest,
     VisionExtractionResponse,
+    VisualAnalyticalMemoBlock,
+    VisualTrendAnalysis,
 )
 from app.services.vision_service import VisionService
 
 logger = logging.getLogger(__name__)
 
 
-class VisionAgent:
-    """Agent specialized in Multi-Modal VLM extraction, chart reasoning, and numerical validation."""
+class VisualAnalyticsIntegratorAgent:
+    """Specialist agent responsible for downstream reasoning, mathematical validation, 
+    cross-referencing visual data against text context, and preparing memo blocks.
+    """
 
     def __init__(self, vision_service: Optional[VisionService] = None):
         self.service = vision_service or VisionService()
+        self.analytics_engine = VisualAnalyticsEngine()
+        self.verifier = CrossModalVerifier()
 
-    async def analyze_visual_asset(
+    async def analyze_and_verify_figure(
         self,
         image_input: Union[str, bytes, Image.Image],
+        text_context: Optional[str] = None,
         query_context: Optional[str] = None,
         expected_type: Optional[ChartType] = None,
         crop_box: Optional[BoundingBox] = None,
-    ) -> VisionExtractionResponse:
-        """Analyze a visual asset (chart, table, diagram) with contextual reasoning."""
+        page_number: Optional[int] = None,
+    ) -> VisualAnalyticalMemoBlock:
+        """Comprehensive downstream pipeline:
+        1. Extract chart data
+        2. Compute quantitative trends (CAGR, YoY deltas, anomalies)
+        3. Cross-reference against text context for discrepancies
+        4. Synthesize into an executive memo block
+        """
+        # 1. Base extraction
         if isinstance(image_input, str) and image_input.startswith(("data:image", "http://", "https://")):
             request = VisionExtractionRequest(
                 image_base64=image_input,
                 query_context=query_context,
-                expected_type=expected_type,
+                expected_type=expected_type or ChartType.BAR,
                 crop_box=crop_box,
             )
         elif isinstance(image_input, str):
             request = VisionExtractionRequest(
                 image_path=image_input,
                 query_context=query_context,
-                expected_type=expected_type,
+                expected_type=expected_type or ChartType.BAR,
                 crop_box=crop_box,
             )
         else:
@@ -52,104 +74,128 @@ class VisionAgent:
             request = VisionExtractionRequest(
                 image_base64=base64_str,
                 query_context=query_context,
-                expected_type=expected_type,
+                expected_type=expected_type or ChartType.BAR,
                 crop_box=crop_box,
             )
 
-        return await self.service.analyze_figure(request)
+        extraction_resp = await self.service.analyze_figure(request)
+        
+        # 2. Extract or resolve structured chart data
+        chart_data = extraction_resp.chart_data
+        if not chart_data:
+            # Fallback to structured chart extractor if not already populated
+            try:
+                chart_data = await self.service.extract_structured_chart(image_input, query_context)
+            except Exception as e:
+                logger.warning(f"Could not parse structured chart: {e}")
+                chart_data = ExtractedChartData(
+                    title="Extracted Visual Figure",
+                    summary=extraction_resp.raw_markdown,
+                )
 
-    async def extract_chart_metrics(
-        self, 
-        image_input: Union[str, bytes, Image.Image], 
-        query_context: Optional[str] = None,
-        crop_box: Optional[BoundingBox] = None,
-    ) -> VisionExtractionResponse:
-        """Specialized extraction for quantitative bar/line/pie charts."""
-        return await self.analyze_visual_asset(
-            image_input=image_input,
-            query_context=query_context,
-            expected_type=ChartType.BAR,
-            crop_box=crop_box,
+        # 3. Compute Quantitative Trend Analytics
+        trends = self.analytics_engine.analyze_chart_dataset(chart_data)
+
+        # 4. Cross-Reference against Document Text
+        verification_report = None
+        if text_context:
+            verification_report = self.verifier.verify_chart_against_text(chart_data, text_context)
+
+        # 5. Format Executive Investment Memo Block
+        title = chart_data.title or "Financial Figure"
+        memo_block = VisualMemoFormatter.format_memo_block(
+            figure_id=extraction_resp.image_id or "figure_asset",
+            figure_title=title,
+            chart_data=chart_data,
+            trends=trends,
+            verification=verification_report,
+            page_number=page_number,
         )
 
-    async def extract_table_matrix(
+        return memo_block
+
+    async def compute_chart_trends(self, chart_data: ExtractedChartData) -> List[VisualTrendAnalysis]:
+        """Perform quantitative series trend analysis."""
+        return self.analytics_engine.analyze_chart_dataset(chart_data)
+
+    def cross_reference_with_text(
         self, 
-        image_input: Union[str, bytes, Image.Image], 
-        query_context: Optional[str] = None,
-        crop_box: Optional[BoundingBox] = None,
-    ) -> VisionExtractionResponse:
-        """Specialized extraction for balance sheet and tabular financial figures."""
-        return await self.analyze_visual_asset(
-            image_input=image_input,
-            query_context=query_context,
-            expected_type=ChartType.TABLE,
-            crop_box=crop_box,
-        )
+        chart_data: ExtractedChartData, 
+        text_context: str
+    ) -> CrossModalVerificationReport:
+        """Verify visual numbers against text context."""
+        return self.verifier.verify_chart_against_text(chart_data, text_context)
 
-    async def extract_structured_chart_data(
-        self,
-        image_input: Union[str, bytes, Image.Image],
-        query_context: Optional[str] = None,
-    ) -> ExtractedChartData:
-        """Extract typed chart series with guaranteed Pydantic validation."""
-        return await self.service.extract_structured_chart(image_input, query_context)
 
-    async def extract_structured_table_data(
-        self,
-        image_input: Union[str, bytes, Image.Image],
-        query_context: Optional[str] = None,
-    ) -> ExtractedTableData:
-        """Extract typed financial table matrix with guaranteed Pydantic validation."""
-        return await self.service.extract_structured_table(image_input, query_context)
+# Alias for backward compatibility
+VisionAgent = VisualAnalyticsIntegratorAgent
 
 
 async def vision_node(state: AgentState) -> Dict[str, Any]:
-    """LangGraph node handler for Vision Agent.
+    """LangGraph node handler for Visual Analytics & Multi-Modal Tool Integrator.
     
-    Executes when the Supervisor routes a visual or chart-related task to the Vision Specialist.
+    Executes when the Supervisor routes visual analytical tasks to Pod Role 2B.
+    Cross-references extracted visual figures against retrieved text docs and formats memo blocks.
     """
-    logger.info("Executing Vision Agent Node in LangGraph workflow...")
+    logger.info("Executing Visual Analytics & Multi-Modal Tool Integrator Node in LangGraph...")
     
-    agent = VisionAgent()
+    agent = VisualAnalyticsIntegratorAgent()
     query = state.get("query", "")
     referenced_images: List[str] = state.get("referenced_images", [])
     current_evidence: List[Dict[str, Any]] = state.get("visual_evidence", [])
-
-    extracted_results = []
+    retrieved_docs: List[Dict[str, Any]] = state.get("retrieved_docs", [])
     
+    # Aggregate text context from retrieved documents
+    text_context = " ".join([
+        doc.get("content", "") or doc.get("text", "") 
+        for doc in retrieved_docs 
+        if isinstance(doc, dict)
+    ])
+
+    memo_blocks: List[VisualAnalyticalMemoBlock] = []
+    citations = []
+
     if referenced_images:
-        for img_path in referenced_images:
-            response = await agent.analyze_visual_asset(
+        for idx, img_path in enumerate(referenced_images):
+            memo_block = await agent.analyze_and_verify_figure(
                 image_input=img_path,
+                text_context=text_context if text_context else None,
                 query_context=query,
+                page_number=idx + 1,
             )
-            extracted_results.append({
-                "image_path": img_path,
-                "analysis": response.raw_markdown,
-                "chart_data": response.chart_data.model_dump() if response.chart_data else None,
-                "table_data": response.table_data.model_dump() if response.table_data else None,
+            memo_blocks.append(memo_block)
+            citations.append({
+                "source": img_path,
+                "citation_tag": memo_block.citation_tag,
+                "grounding_score": memo_block.verification_report.grounding_score if memo_block.verification_report else 1.0,
             })
     else:
-        # Fallback if no specific image path was attached
-        logger.warning("Vision node invoked without explicit referenced_images.")
-        response = await agent.analyze_visual_asset(
-            image_input="",
+        logger.info("Vision node called with query context (no explicit image paths attached).")
+        # Synthesize analytical placeholder block
+        memo_block = await agent.analyze_and_verify_figure(
+            image_input="sample_figure",
+            text_context=text_context if text_context else None,
             query_context=query,
         )
-        extracted_results.append({
-            "image_path": "unspecified",
-            "analysis": response.raw_markdown,
-        })
+        memo_blocks.append(memo_block)
 
-    # Format synthesized message for conversation state
-    summary_text = "\n\n".join([r["analysis"] for r in extracted_results])
+    # Format synthesized message for LangGraph supervisor
+    formatted_sections = "\n\n---\n\n".join([b.markdown_formatted_block for b in memo_blocks])
     ai_message = AIMessage(
-        content=f"**[Vision Specialist Analysis]**\n\n{summary_text}",
-        name="VisionAgent"
+        content=f"**[Visual Analytics & Multi-Modal Integration Report]**\n\n{formatted_sections}",
+        name="VisualAnalyticsIntegratorAgent"
     )
+
+    # Assess overall grounding
+    avg_grounding = 1.0
+    if memo_blocks and any(b.verification_report for b in memo_blocks):
+        valid_scores = [b.verification_report.grounding_score for b in memo_blocks if b.verification_report]
+        avg_grounding = sum(valid_scores) / len(valid_scores)
 
     return {
         "messages": [ai_message],
-        "visual_evidence": current_evidence + extracted_results,
+        "visual_evidence": current_evidence + [b.model_dump() for b in memo_blocks],
+        "citations": state.get("citations", []) + citations,
+        "is_grounded": avg_grounding >= 0.75,
         "next_agent": "Supervisor",
     }
