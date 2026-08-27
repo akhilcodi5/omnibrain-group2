@@ -71,11 +71,10 @@ def test_search_agent_pdf_filter(populated_vector_store):
 
 def test_search_agent_node(populated_vector_store):
     """Test search_agent_node function updating LangGraph AgentState."""
-    agent = SearchAgent(vector_store=populated_vector_store)
-    
     state = {
         "query": "Tell me about Q3 operating expenses",
         "messages": [HumanMessage(content="Tell me about Q3 operating expenses")],
+        "vector_store": populated_vector_store,
         "next_agent": None,
         "retrieved_docs": [],
         "visual_evidence": [],

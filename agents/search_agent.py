@@ -123,8 +123,9 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
         last_msg = state["messages"][-1]
         query = getattr(last_msg, "content", str(last_msg))
 
+    vector_store = state.get("vector_store")
     logger.info(f"Executing search_agent_node for query: '{query}'")
-    agent = SearchAgent()
+    agent = SearchAgent(vector_store=vector_store)
     result = agent.execute_search(query=query, top_k=5)
 
     summary_text = result["summary"]
