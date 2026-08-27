@@ -29,7 +29,8 @@ class DefaultEmbedder:
             from sentence_transformers import SentenceTransformer
             logger.info(f"Loading SentenceTransformer model: {model_name}")
             self._st_model = SentenceTransformer(model_name)
-            self._vector_size = self._st_model.get_sentence_embedding_dimension() or 384
+            get_dim_fn = getattr(self._st_model, "get_embedding_dimension", None) or getattr(self._st_model, "get_sentence_embedding_dimension", None)
+            self._vector_size = get_dim_fn() if get_dim_fn else 384
         except Exception as e:
             logger.warning(f"Could not load SentenceTransformer ({e}). Using deterministic fallback embeddings.")
 
@@ -142,9 +143,15 @@ class VectorStore:
         inserted_ids = []
 
         for idx, (doc, vector) in enumerate(zip(documents, embeddings)):
-            chunk_id = doc.get("chunk_id") or doc.get("id") or str(uuid.uuid4())
+            chunk_id = str(doc.get("chunk_id") or doc.get("id") or uuid.uuid4())
             inserted_ids.append(chunk_id)
             
+            # Ensure Qdrant point ID is a valid UUID
+            try:
+                point_id = str(uuid.UUID(chunk_id))
+            except ValueError:
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk_id))
+
             metadata = doc.get("metadata", {})
             payload = {
                 "text": doc.get("text", ""),
@@ -163,7 +170,7 @@ class VectorStore:
 
             points.append(
                 models.PointStruct(
-                    id=chunk_id,
+                    id=point_id,
                     vector=vector,
                     payload=payload,
                 )
