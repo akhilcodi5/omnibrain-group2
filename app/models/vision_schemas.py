@@ -1,4 +1,4 @@
-"""Pydantic schemas for Visual Analytics, Cross-Modal Verification, and Tool Integration."""
+"""Pydantic schemas for Visual Analytics, Cross-Modal Verification, Multi-Figure Comparison, and Citation Overlays."""
 
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
@@ -21,6 +21,14 @@ class ChartType(str, Enum):
     DIAGRAM = "diagram"
     INFOGRAPHIC = "infographic"
     UNKNOWN = "unknown"
+
+
+class VLMProviderType(str, Enum):
+    """Supported Vision-Language Model providers."""
+    OPENAI = "openai"
+    LLAVA_OLLAMA = "llava_ollama"
+    ANTHROPIC = "anthropic"
+    MOCK = "mock"
 
 
 class BoundingBox(BaseModel):
@@ -163,7 +171,47 @@ class CrossModalVerificationReport(BaseModel):
 
 
 # =====================================================================
-# 4. Multi-Modal Memo Formatting (Supervisor Synthesis Payload)
+# 4. Multi-Figure Comparative Analytics Models (Task 2B)
+# =====================================================================
+
+class ComparisonMetricDelta(BaseModel):
+    """Variance analysis between matching metrics in two visual figures."""
+    label: str = Field(..., description="Category label or period (e.g. 'Q3 2024')")
+    figure_a_value: Optional[float] = Field(None, description="Value in primary figure")
+    figure_b_value: Optional[float] = Field(None, description="Value in comparison figure")
+    variance_absolute: Optional[float] = Field(None, description="Figure B minus Figure A absolute difference")
+    variance_percentage: Optional[float] = Field(None, description="Percentage variance between figures")
+    takeaway: str = Field(..., description="Analytical takeaway for this metric comparison")
+
+
+class MultiFigureComparisonReport(BaseModel):
+    """Comparative analytics output synthesizing insights across two or more figures."""
+    primary_figure_title: str = Field(..., description="Title of primary visual asset")
+    secondary_figure_title: str = Field(..., description="Title of comparison visual asset")
+    comparison_type: str = Field(default="Cross-Period / Segment Analysis")
+    metric_deltas: List[ComparisonMetricDelta] = Field(default_factory=list)
+    divergence_summary: str = Field(..., description="Executive comparative synthesis")
+    strategic_insights: List[str] = Field(default_factory=list)
+
+
+# =====================================================================
+# 5. Visual Citation & Overlay Payload (Task 2B)
+# =====================================================================
+
+class VisualCitationPayload(BaseModel):
+    """Rendered visual citation bundle ready for Streamlit UI display and PDF drill-down."""
+    figure_id: str = Field(..., description="Unique figure ID")
+    figure_title: str = Field(..., description="Figure caption or title")
+    page_number: Optional[int] = Field(None, description="PDF page number")
+    citation_tag: str = Field(..., description="Clickable anchor tag")
+    status: VerificationStatus = Field(default=VerificationStatus.VERIFIED_MATCH)
+    highlighted_page_base64: Optional[str] = Field(None, description="Base64 PNG of page with bounding-box highlight")
+    thumbnail_snippet_base64: Optional[str] = Field(None, description="Base64 PNG cropped to the figure bounding box")
+    grounding_confidence: float = Field(default=1.0)
+
+
+# =====================================================================
+# 6. Multi-Modal Memo Formatting (Supervisor Synthesis Payload)
 # =====================================================================
 
 class VisualAnalyticalMemoBlock(BaseModel):
@@ -174,6 +222,8 @@ class VisualAnalyticalMemoBlock(BaseModel):
     executive_summary: str = Field(..., description="Concise visual analytical summary")
     trend_analytics: List[VisualTrendAnalysis] = Field(default_factory=list)
     verification_report: Optional[CrossModalVerificationReport] = Field(None)
+    comparison_report: Optional[MultiFigureComparisonReport] = Field(None)
+    citation_payload: Optional[VisualCitationPayload] = Field(None)
     key_takeaways: List[str] = Field(default_factory=list)
     risk_warnings: List[str] = Field(default_factory=list)
     citation_tag: str = Field(..., description="Clickable citation anchor (e.g. '[Fig 3: Page 14 - Revenue Chart]')")
