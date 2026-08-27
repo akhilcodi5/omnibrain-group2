@@ -73,3 +73,6 @@ storage/qdrant_data/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# For my branch(akhil)
+plan_and_my_role.md
