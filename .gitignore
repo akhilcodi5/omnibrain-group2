@@ -67,6 +67,7 @@ venv.bak/
 # Local storage and data
 storage/*.db
 storage/images/
+storage/extracted_images/
 storage/uploads/
 storage/qdrant_data/
 
