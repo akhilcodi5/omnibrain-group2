@@ -1,7 +1,7 @@
 """Visual Analytics & Multi-Modal Tool Integrator Agent.
 
 Handles downstream reasoning, mathematical trend analysis, cross-modal grounding verification,
-and executive memo formatting for visual figures in LangGraph.
+iterative Self-RAG fact-checking, and executive memo formatting for visual figures in LangGraph.
 """
 
 import logging
@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
 from PIL import Image
 
+from agents.cross_modal_self_rag import CrossModalSelfRAG
 from agents.cross_modal_verifier import CrossModalVerifier
 from agents.state import AgentState
 from agents.visual_analytics import VisualAnalyticsEngine
@@ -25,6 +26,7 @@ from app.models.vision_schemas import (
     VisualTrendAnalysis,
 )
 from app.services.vision_service import VisionService
+from storage.vector_store import VectorStore, get_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +36,15 @@ class VisualAnalyticsIntegratorAgent:
     cross-referencing visual data against text context, and preparing memo blocks.
     """
 
-    def __init__(self, vision_service: Optional[VisionService] = None):
+    def __init__(
+        self,
+        vision_service: Optional[VisionService] = None,
+        vector_store: Optional[VectorStore] = None,
+    ):
         self.service = vision_service or VisionService()
         self.analytics_engine = VisualAnalyticsEngine()
         self.verifier = CrossModalVerifier()
+        self.self_rag = CrossModalSelfRAG(vector_store=vector_store or get_vector_store(in_memory=True))
 
     async def analyze_and_verify_figure(
         self,
@@ -47,11 +54,12 @@ class VisualAnalyticsIntegratorAgent:
         expected_type: Optional[ChartType] = None,
         crop_box: Optional[BoundingBox] = None,
         page_number: Optional[int] = None,
+        use_self_rag_loop: bool = True,
     ) -> VisualAnalyticalMemoBlock:
         """Comprehensive downstream pipeline:
         1. Extract chart data
         2. Compute quantitative trends (CAGR, YoY deltas, anomalies)
-        3. Cross-reference against text context for discrepancies
+        3. Cross-reference against text context (with autonomous Self-RAG vector search)
         4. Synthesize into an executive memo block
         """
         # 1. Base extraction
@@ -83,7 +91,6 @@ class VisualAnalyticsIntegratorAgent:
         # 2. Extract or resolve structured chart data
         chart_data = extraction_resp.chart_data
         if not chart_data:
-            # Fallback to structured chart extractor if not already populated
             try:
                 chart_data = await self.service.extract_structured_chart(image_input, query_context)
             except Exception as e:
@@ -96,9 +103,15 @@ class VisualAnalyticsIntegratorAgent:
         # 3. Compute Quantitative Trend Analytics
         trends = self.analytics_engine.analyze_chart_dataset(chart_data)
 
-        # 4. Cross-Reference against Document Text
+        # 4. Cross-Reference against Document Text with Self-RAG Loop
         verification_report = None
-        if text_context:
+        if use_self_rag_loop:
+            verification_report = self.self_rag.execute_visual_fact_check_loop(
+                chart_data=chart_data,
+                original_query=query_context or "",
+                initial_text_context=text_context,
+            )
+        elif text_context:
             verification_report = self.verifier.verify_chart_against_text(chart_data, text_context)
 
         # 5. Format Executive Investment Memo Block
@@ -139,7 +152,8 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Executing Visual Analytics & Multi-Modal Tool Integrator Node in LangGraph...")
     
-    agent = VisualAnalyticsIntegratorAgent()
+    vector_store = state.get("vector_store") or get_vector_store(in_memory=True)
+    agent = VisualAnalyticsIntegratorAgent(vector_store=vector_store)
     query = state.get("query", "")
     referenced_images: List[str] = state.get("referenced_images", [])
     current_evidence: List[Dict[str, Any]] = state.get("visual_evidence", [])
@@ -171,7 +185,6 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             })
     else:
         logger.info("Vision node called with query context (no explicit image paths attached).")
-        # Synthesize analytical placeholder block
         memo_block = await agent.analyze_and_verify_figure(
             image_input="sample_figure",
             text_context=text_context if text_context else None,
