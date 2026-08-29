@@ -67,9 +67,13 @@ venv.bak/
 # Local storage and data
 storage/*.db
 storage/images/
+storage/extracted_images/
 storage/uploads/
 storage/qdrant_data/
 
 # OS specific
 .DS_Store
 Thumbs.db
+
+# For my branch(akhil)
+plan_and_my_role.md
