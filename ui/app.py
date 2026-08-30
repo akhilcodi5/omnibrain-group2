@@ -20,6 +20,11 @@ from app.models.vision_schemas import (
     VerificationStatus,
 )
 from app.services.citation_renderer import CitationRenderer
+from ui.components.citation_viewer import (
+    render_citation_gallery,
+    render_citation_sidebar_list,
+)
+from ui.components.thought_trace import render_thought_trace
 from ui.components.visual_analytics_view import render_visual_analytics_panel
 
 # Page Configuration
@@ -114,6 +119,42 @@ memo_block = VisualMemoFormatter.format_memo_block(
 )
 memo_block.citation_payload = citation_payload
 
+# Render Sidebar Citations
+render_citation_sidebar_list([{
+    "citation_tag": memo_block.citation_tag,
+    "pdf_name": "Apex_FY24_Annual_Report.pdf",
+    "page_number": 14,
+}])
+
+# Render Agent Thought Trace
+sample_steps = [
+    {
+        "agent": "Supervisor",
+        "action": "Classify Query Intent",
+        "thought": "Query requests cross-referencing between executive text claims and quarterly visual charts.",
+        "tool": "visual_routing_evaluator",
+        "args": {"query": sample_query},
+        "status": "completed",
+    },
+    {
+        "agent": "SearchAgent",
+        "action": "Vector Chunk Retrieval",
+        "thought": "Retrieved 3 text chunks mentioning Q1-Q4 revenue figures from Apex FY24 report.",
+        "tool": "search_vector_store_tool",
+        "args": {"top_k": 3},
+        "status": "completed",
+    },
+    {
+        "agent": "VisualAnalyticsIntegratorAgent",
+        "action": "Cross-Modal Fact-Checking & Trend Derivations",
+        "thought": "Extracted bar chart figures, computed CAGR (10.4%), and verified 100% match against text.",
+        "tool": "verify_visual_numbers_against_text",
+        "args": {"tolerance_pct": 2.0},
+        "status": "completed",
+    }
+]
+render_thought_trace(sample_steps, execution_time_seconds=1.42)
+
 # Main Interface Tabs
 tab1, tab2, tab3, tab4 = st.tabs([
     "📑 Synthesized Investment Memo",
@@ -171,6 +212,4 @@ with tab3:
 with tab4:
     st.subheader("Interactive Visual Citation & Document Grounding Snip")
     st.write(f"Clickable Citation Anchor: `{memo_block.citation_tag}`")
-    if citation_payload.highlighted_page_base64:
-        img_bytes = base64.b64decode(citation_payload.highlighted_page_base64)
-        st.image(img_bytes, caption=f"PDF Page 14 Highlight: {sample_chart.title}", width=600)
+    render_citation_gallery([citation_payload])
