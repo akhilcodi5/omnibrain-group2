@@ -32,22 +32,19 @@ def supervisor_node(state: AgentState) -> Dict[str, Any]:
     # Routing logic
     next_node: str = "synthesizer"
 
+    # Safety guardrail against infinite looping
+    if iteration >= 5:
+        logger.warning(f"Supervisor reached max iteration count ({iteration}). Routing to synthesizer.")
+        next_node = "synthesizer"
     # If query targets visual figures / charts and we haven't invoked vision agent yet
-    if intent.requires_visual_agent and not visual_evidence:
+    elif intent.requires_visual_agent and not visual_evidence:
         next_node = "vision_agent"
-
     # If query is about stock prices, P/E, market cap or structured metrics and SQL not run
     elif any(k in query.lower() for k in ["price", "p/e", "market cap", "stock", "52-week", "ticker"]) and not sql_results:
         next_node = "sql_agent"
-
     # If general or verification query and search has not retrieved docs yet
     elif not retrieved_docs and intent.primary_intent in (VisualIntentType.GENERAL_QUERY, VisualIntentType.CROSS_MODAL_VERIFY, VisualIntentType.SYNTHESIZE_MEMO):
         next_node = "search_agent"
-
-    # If visual intent was classified and we have text but not visual evidence
-    elif intent.requires_visual_agent and not visual_evidence:
-        next_node = "vision_agent"
-
     # Otherwise, we have collected sufficient multi-modal evidence -> route to synthesizer
     else:
         next_node = "synthesizer"
