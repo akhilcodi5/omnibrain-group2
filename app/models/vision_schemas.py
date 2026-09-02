@@ -92,6 +92,24 @@ class ExtractedTableData(BaseModel):
     bounding_box: Optional[BoundingBox] = Field(None, description="Coordinates of table on source page")
 
 
+class VisionExtractionRequest(BaseModel):
+    """Request payload for vision extraction processing."""
+    image_input: Any = Field(..., description="Image file path, bytes, base64 string, or PIL Image")
+    query_context: Optional[str] = Field(None, description="Optional prompt or query context")
+    expected_type: ChartType = Field(default=ChartType.UNKNOWN, description="Expected chart or figure type")
+    crop_box: Optional[BoundingBox] = Field(None, description="Optional bounding box to crop region")
+    page_number: Optional[int] = Field(None, description="Page number of the figure")
+
+
+class VisionExtractionResponse(BaseModel):
+    """Response payload returned by VisionService extraction."""
+    extracted_chart: Optional[ExtractedChartData] = Field(None, description="Extracted chart data")
+    extracted_table: Optional[ExtractedTableData] = Field(None, description="Extracted table data")
+    raw_vlm_output: str = Field("", description="Raw LLM/VLM text response")
+    confidence_score: float = Field(default=1.0, ge=0.0, le=1.0)
+    provider: str = Field(default="openai", description="VLM provider used")
+
+
 # =====================================================================
 # 2. Downstream Visual Analytics Models (Task 2B)
 # =====================================================================
