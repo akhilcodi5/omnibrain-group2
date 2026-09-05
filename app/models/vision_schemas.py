@@ -92,6 +92,35 @@ class ExtractedTableData(BaseModel):
     bounding_box: Optional[BoundingBox] = Field(None, description="Coordinates of table on source page")
 
 
+class VisionExtractionRequest(BaseModel):
+    """Request payload for vision extraction."""
+    image_path: Optional[str] = Field(None, description="Local path to the image file")
+    image_base64: Optional[str] = Field(None, description="Base64-encoded image string")
+    image_url: Optional[str] = Field(None, description="Public URL of the image")
+    query_context: Optional[str] = Field(
+        None, 
+        description="Optional user query context to focus visual extraction on specific metrics"
+    )
+    expected_type: Optional[ChartType] = Field(
+        None, 
+        description="Hint for expected visual type (e.g. TABLE, BAR, LINE)"
+    )
+    crop_box: Optional[BoundingBox] = Field(
+        None, 
+        description="Optional sub-bounding box to crop before VLM inference"
+    )
+
+
+class VisionExtractionResponse(BaseModel):
+    """Unified response container for multi-modal vision extraction."""
+    image_id: Optional[str] = Field(None, description="Identifier of the source image/figure")
+    page_number: Optional[int] = Field(None, description="Source PDF page number if applicable")
+    chart_data: Optional[ExtractedChartData] = Field(None, description="Structured chart data if figure is a chart")
+    table_data: Optional[ExtractedTableData] = Field(None, description="Structured table data if figure is a table")
+    raw_markdown: str = Field(..., description="Markdown-formatted visual interpretation and analysis")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Execution metadata (model, tokens, latency)")
+
+
 # =====================================================================
 # 2. Downstream Visual Analytics Models (Task 2B)
 # =====================================================================

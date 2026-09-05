@@ -1,8 +1,9 @@
-"""FastAPI endpoints for Visual Analytics, Cross-Modal Verification, and Citation Rendering (Task 2B)."""
+"""FastAPI endpoints for Visual Analytics, Cross-Modal Verification, Citation Rendering, and Benchmarking (Task 2B)."""
 
 import logging
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
+from PIL import Image
 from pydantic import BaseModel
 
 from agents.cross_modal_verifier import CrossModalVerifier
@@ -11,12 +12,17 @@ from agents.visual_analytics import VisualAnalyticsEngine
 from agents.visual_comparator import VisualComparator
 from agents.visual_tools import VisualMemoFormatter
 from app.models.vision_schemas import (
+    BoundingBox,
     CrossModalVerificationReport,
     ExtractedChartData,
     MultiFigureComparisonReport,
+    VerificationStatus,
     VisualAnalyticalMemoBlock,
+    VisualCitationPayload,
     VisualTrendAnalysis,
 )
+from app.services.citation_renderer import CitationRenderer
+from eval.benchmark_runner import BenchmarkRunner
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +51,14 @@ class FormatMemoBlockRequest(BaseModel):
     chart_data: ExtractedChartData
     text_context: Optional[str] = None
     page_number: Optional[int] = None
+
+
+class RenderOverlayRequest(BaseModel):
+    figure_title: str
+    page_number: Optional[int] = None
+    bounding_box: BoundingBox
+    status: VerificationStatus = VerificationStatus.VERIFIED_MATCH
+    grounding_confidence: float = 1.0
 
 
 @router.post("/verify-cross-modal", response_model=CrossModalVerificationReport)
@@ -104,6 +118,37 @@ async def format_memo_block_endpoint(req: FormatMemoBlockRequest):
         return block
     except Exception as e:
         logger.error(f"Memo block formatting error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/render-overlay", response_model=VisualCitationPayload)
+async def render_citation_overlay_endpoint(req: RenderOverlayRequest):
+    """Render a dynamic highlighted bounding-box overlay image for citations."""
+    try:
+        canvas = Image.new("RGB", (800, 1000), color="white")
+        payload = CitationRenderer.render_citation_overlay(
+            image=canvas,
+            bounding_box=req.bounding_box,
+            figure_title=req.figure_title,
+            page_number=req.page_number,
+            status=req.status,
+            grounding_confidence=req.grounding_confidence,
+        )
+        return payload
+    except Exception as e:
+        logger.error(f"Overlay rendering error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/benchmark", response_model=Dict[str, Any])
+async def run_benchmark_endpoint():
+    """Execute automated multi-modal accuracy and grounding benchmark test cases."""
+    try:
+        runner = BenchmarkRunner()
+        card = runner.run_all_benchmarks()
+        return card
+    except Exception as e:
+        logger.error(f"Benchmark run error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
