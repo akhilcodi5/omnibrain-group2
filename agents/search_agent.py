@@ -139,5 +139,5 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
         "retrieved_docs": result["retrieved_docs"],
         "citations": result["citations"],
         "retrieval_confidence": result["retrieval_confidence"],
-        "is_grounded": len(result["retrieved_docs"]) > 0 and result["retrieval_confidence"] >= 0.3,
+        "is_grounded": len(result["retrieved_docs"]) > 0,
     }

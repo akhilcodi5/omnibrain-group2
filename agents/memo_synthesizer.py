@@ -48,6 +48,11 @@ class MemoSynthesizer:
                 lines.append(f"- **Key Finding**: {takeaway}")
         else:
             lines.append("- Multi-modal analysis completed across ingested corporate financial PDF exhibits.")
+        
+        if text_context_snippets:
+            lines.append("\n**Qualitative & Textual Evidence Context**:")
+            for snippet in text_context_snippets:
+                lines.append(f"> {snippet}")
         lines.append("")
 
         # 3. Visual Analytics & Derived Trajectories

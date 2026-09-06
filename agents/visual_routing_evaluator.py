@@ -52,8 +52,8 @@ class VisualRoutingEvaluator:
     ]
 
     MEMO_KEYWORDS = [
-        "investment memo", "memo", "executive summary", "comprehensive analysis",
-        "briefing", "report", "synthesis", "diligence report",
+        "investment memo", "memo", "executive summary", "comprehensive memo",
+        "diligence memo", "investment thesis", "synthesize memo",
     ]
 
     @classmethod

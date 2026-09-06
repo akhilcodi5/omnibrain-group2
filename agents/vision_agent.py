@@ -46,6 +46,38 @@ class VisualAnalyticsIntegratorAgent:
         self.verifier = CrossModalVerifier()
         self.self_rag = CrossModalSelfRAG(vector_store=vector_store or get_vector_store(in_memory=True))
 
+    async def analyze_visual_asset(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+        expected_type: Optional[ChartType] = None,
+        crop_box: Optional[BoundingBox] = None,
+    ) -> VisionExtractionResponse:
+        """Role 2A Core: Extract structured visual data and markdown interpretation."""
+        if isinstance(image_input, str) and image_input.startswith(("data:image", "http://", "https://")):
+            request = VisionExtractionRequest(
+                image_base64=image_input,
+                query_context=query_context,
+                expected_type=expected_type or ChartType.BAR,
+                crop_box=crop_box,
+            )
+        elif isinstance(image_input, str):
+            request = VisionExtractionRequest(
+                image_path=image_input,
+                query_context=query_context,
+                expected_type=expected_type or ChartType.BAR,
+                crop_box=crop_box,
+            )
+        else:
+            base64_str = self.service.encode_image_to_base64(image_input)
+            request = VisionExtractionRequest(
+                image_base64=base64_str,
+                query_context=query_context,
+                expected_type=expected_type or ChartType.BAR,
+                crop_box=crop_box,
+            )
+        return await self.service.analyze_figure(request)
+
     async def analyze_and_verify_figure(
         self,
         image_input: Union[str, bytes, Image.Image],

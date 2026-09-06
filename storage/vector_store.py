@@ -183,6 +183,30 @@ class VectorStore:
         logger.info(f"Indexed {len(points)} document chunks into '{self.collection_name}'")
         return inserted_ids
 
+    def add_chunks(self, texts: List[str], metadatas: Optional[List[Dict[str, Any]]] = None) -> List[str]:
+        """Convenience method to index raw texts and metadatas into the vector store.
+        
+        Args:
+            texts: List of text chunk strings.
+            metadatas: Optional list of metadata dicts corresponding to texts.
+            
+        Returns:
+            List of generated/assigned chunk IDs.
+        """
+        docs = []
+        for idx, t in enumerate(texts):
+            meta = metadatas[idx] if metadatas and idx < len(metadatas) else {}
+            chunk_id = meta.get("chunk_id", str(uuid.uuid4()))
+            docs.append({
+                "text": t,
+                "metadata": meta,
+                "pdf_name": meta.get("pdf_name", "unknown.pdf"),
+                "page_number": meta.get("page_number", 1),
+                "section_title": meta.get("section_title", ""),
+                "chunk_id": chunk_id,
+            })
+        return self.add_documents(docs)
+
     def similarity_search(
         self,
         query: str,
