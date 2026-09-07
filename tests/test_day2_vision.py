@@ -107,3 +107,19 @@ async def test_vision_agent_with_crop_box():
     
     assert response is not None
     assert response.raw_markdown != ""
+
+
+@pytest.mark.asyncio
+async def test_structured_table_extraction():
+    """Test structured financial table extraction returning valid ExtractedTableData model."""
+    service = VisionService(engine=MockVisionEngine())
+    img = Image.new("RGB", (120, 80), color="white")
+
+    table_data = await service.extract_structured_table(img, query_context="Income Statement table")
+
+    assert isinstance(table_data, ExtractedTableData)
+    assert table_data.title == "Consolidated Statement of Income"
+    assert len(table_data.headers) == 5
+    assert len(table_data.rows) == 6
+    assert table_data.currency == "USD"
+    assert table_data.key_metrics["Gross Margin"] == "64.3%"

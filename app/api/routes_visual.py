@@ -13,20 +13,47 @@ from agents.visual_comparator import VisualComparator
 from agents.visual_tools import VisualMemoFormatter
 from app.models.vision_schemas import (
     BoundingBox,
+    ChartType,
     CrossModalVerificationReport,
     ExtractedChartData,
+    ExtractedTableData,
     MultiFigureComparisonReport,
     VerificationStatus,
+    VisionExtractionRequest,
+    VisionExtractionResponse,
     VisualAnalyticalMemoBlock,
     VisualCitationPayload,
     VisualTrendAnalysis,
 )
 from app.services.citation_renderer import CitationRenderer
+from app.services.vision_service import VisionService
 from eval.benchmark_runner import BenchmarkRunner
+from storage.image_store import get_image_store
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/visual", tags=["Visual Analytics & Tool Integration"])
+router = APIRouter(prefix="/api/v1/visual", tags=["Multi-Modal Vision & Analytics"])
+
+
+class ExtractChartRequest(BaseModel):
+    image_path: Optional[str] = None
+    image_base64: Optional[str] = None
+    query_context: Optional[str] = None
+
+
+class ExtractTableRequest(BaseModel):
+    image_path: Optional[str] = None
+    image_base64: Optional[str] = None
+    query_context: Optional[str] = None
+
+
+class SaveAssetRequest(BaseModel):
+    image_base64: str
+    doc_id: str
+    page_number: int
+    figure_name: str = "figure"
+    figure_type: str = "chart"
+    bounding_box: Optional[BoundingBox] = None
 
 
 class VerifyCrossModalRequest(BaseModel):
@@ -149,6 +176,79 @@ async def run_benchmark_endpoint():
         return card
     except Exception as e:
         logger.error(f"Benchmark run error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extract", response_model=VisionExtractionResponse)
+async def extract_visual_figure_endpoint(req: VisionExtractionRequest):
+    """Direct visual extraction and multimodal reasoning over an image/figure using the configured VLM."""
+    try:
+        service = VisionService()
+        response = await service.analyze_figure(req)
+        return response
+    except Exception as e:
+        logger.error(f"Visual extraction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extract-chart", response_model=ExtractedChartData)
+async def extract_chart_endpoint(req: ExtractChartRequest):
+    """Direct structured chart extraction returning validated ExtractedChartData schema."""
+    try:
+        service = VisionService()
+        image_input = req.image_path or req.image_base64
+        if not image_input:
+            raise HTTPException(status_code=400, detail="Must provide either image_path or image_base64")
+        chart_data = await service.extract_structured_chart(image_input, query_context=req.query_context)
+        return chart_data
+    except Exception as e:
+        logger.error(f"Chart extraction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extract-table", response_model=ExtractedTableData)
+async def extract_table_endpoint(req: ExtractTableRequest):
+    """Direct structured financial table extraction returning validated ExtractedTableData schema."""
+    try:
+        service = VisionService()
+        image_input = req.image_path or req.image_base64
+        if not image_input:
+            raise HTTPException(status_code=400, detail="Must provide either image_path or image_base64")
+        table_data = await service.extract_structured_table(image_input, query_context=req.query_context)
+        return table_data
+    except Exception as e:
+        logger.error(f"Table extraction error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/assets", response_model=Dict[str, Any])
+async def save_visual_asset_endpoint(req: SaveAssetRequest):
+    """Save an extracted visual chart/table asset and cache thumbnail."""
+    try:
+        store = get_image_store()
+        meta = store.save_figure_asset(
+            image_input=req.image_base64,
+            doc_id=req.doc_id,
+            page_number=req.page_number,
+            figure_name=req.figure_name,
+            figure_type=req.figure_type,
+            bounding_box=req.bounding_box,
+        )
+        return meta
+    except Exception as e:
+        logger.error(f"Asset saving error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/assets/{doc_id}", response_model=List[Dict[str, Any]])
+async def list_visual_assets_endpoint(doc_id: str):
+    """List all extracted visual assets and thumbnails for a document."""
+    try:
+        store = get_image_store()
+        assets = store.list_document_assets(doc_id)
+        return assets
+    except Exception as e:
+        logger.error(f"Asset listing error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

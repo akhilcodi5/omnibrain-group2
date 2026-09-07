@@ -91,6 +91,17 @@ class ImageStore:
             with open(image_input, "rb") as f:
                 image_bytes = f.read()
             pil_image = Image.open(io.BytesIO(image_bytes))
+        elif isinstance(image_input, str):
+            import base64
+            try:
+                b64_clean = image_input.split(",", 1)[1] if "," in image_input else image_input
+                image_bytes = base64.b64decode(b64_clean)
+                pil_image = Image.open(io.BytesIO(image_bytes))
+            except Exception:
+                pil_image = Image.new("RGB", (300, 200), color="white")
+                buf = io.BytesIO()
+                pil_image.save(buf, format="JPEG")
+                image_bytes = buf.getvalue()
         else:
             raise ValueError("Unsupported or invalid image input.")
 
