@@ -93,21 +93,32 @@ class ExtractedTableData(BaseModel):
 
 
 class VisionExtractionRequest(BaseModel):
-    """Request payload for vision extraction processing."""
-    image_input: Any = Field(..., description="Image file path, bytes, base64 string, or PIL Image")
-    query_context: Optional[str] = Field(None, description="Optional prompt or query context")
-    expected_type: ChartType = Field(default=ChartType.UNKNOWN, description="Expected chart or figure type")
-    crop_box: Optional[BoundingBox] = Field(None, description="Optional bounding box to crop region")
-    page_number: Optional[int] = Field(None, description="Page number of the figure")
+    """Request payload for vision extraction."""
+    image_path: Optional[str] = Field(None, description="Local path to the image file")
+    image_base64: Optional[str] = Field(None, description="Base64-encoded image string")
+    image_url: Optional[str] = Field(None, description="Public URL of the image")
+    query_context: Optional[str] = Field(
+        None, 
+        description="Optional user query context to focus visual extraction on specific metrics"
+    )
+    expected_type: Optional[ChartType] = Field(
+        None, 
+        description="Hint for expected visual type (e.g. TABLE, BAR, LINE)"
+    )
+    crop_box: Optional[BoundingBox] = Field(
+        None, 
+        description="Optional sub-bounding box to crop before VLM inference"
+    )
 
 
 class VisionExtractionResponse(BaseModel):
-    """Response payload returned by VisionService extraction."""
-    extracted_chart: Optional[ExtractedChartData] = Field(None, description="Extracted chart data")
-    extracted_table: Optional[ExtractedTableData] = Field(None, description="Extracted table data")
-    raw_vlm_output: str = Field("", description="Raw LLM/VLM text response")
-    confidence_score: float = Field(default=1.0, ge=0.0, le=1.0)
-    provider: str = Field(default="openai", description="VLM provider used")
+    """Unified response container for multi-modal vision extraction."""
+    image_id: Optional[str] = Field(None, description="Identifier of the source image/figure")
+    page_number: Optional[int] = Field(None, description="Source PDF page number if applicable")
+    chart_data: Optional[ExtractedChartData] = Field(None, description="Structured chart data if figure is a chart")
+    table_data: Optional[ExtractedTableData] = Field(None, description="Structured table data if figure is a table")
+    raw_markdown: str = Field(..., description="Markdown-formatted visual interpretation and analysis")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Execution metadata (model, tokens, latency)")
 
 
 # =====================================================================

@@ -136,3 +136,40 @@ def test_fastapi_visual_routes():
     trends_json = res_trends.json()
     assert len(trends_json) == 1
     assert trends_json[0]["total_percentage_change"] == 20.0
+
+    # 4. Test Extract Chart Endpoint
+    res_extract_chart = client.post(
+        "/api/v1/visual/extract-chart",
+        json={"image_base64": "dummy_b64_string", "query_context": "Operating Margin"},
+    )
+    assert res_extract_chart.status_code == 200
+    assert res_extract_chart.json()["chart_type"] == "bar"
+    assert len(res_extract_chart.json()["series"][0]["data_points"]) == 4
+
+    # 5. Test Extract Table Endpoint
+    res_extract_table = client.post(
+        "/api/v1/visual/extract-table",
+        json={"image_base64": "dummy_b64_string", "query_context": "Financial Income Statement Table"},
+    )
+    assert res_extract_table.status_code == 200
+    assert res_extract_table.json()["title"] == "Consolidated Statement of Income"
+    assert len(res_extract_table.json()["headers"]) == 5
+
+    # 6. Test Save & List Visual Assets Endpoint
+    res_save_asset = client.post(
+        "/api/v1/visual/assets",
+        json={
+            "image_base64": "dummy_b64_string",
+            "doc_id": "doc_test_101",
+            "page_number": 3,
+            "figure_name": "Revenue Bar Chart",
+            "figure_type": "bar",
+        },
+    )
+    assert res_save_asset.status_code == 200
+    asset_meta = res_save_asset.json()
+    assert asset_meta["doc_id"] == "doc_test_101"
+
+    res_list_assets = client.get("/api/v1/visual/assets/doc_test_101")
+    assert res_list_assets.status_code == 200
+    assert len(res_list_assets.json()) >= 1

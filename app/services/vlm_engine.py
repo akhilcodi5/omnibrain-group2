@@ -231,6 +231,30 @@ class MockVisionEngine(BaseVisionEngine):
         system_prompt: Optional[str] = None,
         media_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
+        import re
+        p_lower = prompt.lower()
+        if re.search(r"\b(table|tables|tabular|balance sheet|income statement)\b", p_lower):
+            return {
+                "title": "Consolidated Statement of Income",
+                "headers": ["Line Item", "Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024"],
+                "rows": [
+                    ["Total Revenue", "$120.5M", "$135.2M", "$148.8M", "$162.0M"],
+                    ["Cost of Goods Sold", "$45.2M", "$49.1M", "$53.4M", "$57.8M"],
+                    ["Gross Profit", "$75.3M", "$86.1M", "$95.4M", "$104.2M"],
+                    ["Operating Expenses", "$48.2M", "$53.9M", "$58.2M", "$60.1M"],
+                    ["Operating Income", "$27.1M", "$32.2M", "$37.2M", "$44.1M"],
+                    ["Net Income", "$21.5M", "$25.8M", "$29.6M", "$35.2M"],
+                ],
+                "summary": "Consolidated quarterly income statement showing margin expansion and revenue growth.",
+                "key_metrics": {
+                    "Q4 Revenue": "$162.0M",
+                    "Q4 Operating Income": "$44.1M",
+                    "Gross Margin": "64.3%",
+                },
+                "currency": "USD",
+                "scale": "Millions",
+            }
+
         return {
             "title": "Quarterly Operating Performance",
             "chart_type": "bar",

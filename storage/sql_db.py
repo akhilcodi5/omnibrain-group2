@@ -13,16 +13,26 @@ class FinancialDatabase:
 
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or os.getenv("DATABASE_URL", "sqlite:///./storage/financial_data.db").replace("sqlite:///", "")
+        self._conn: Optional[sqlite3.Connection] = None
         
         # Ensure parent directory exists
-        db_dir = os.path.dirname(self.db_path)
-        if db_dir and not os.path.exists(db_dir):
-            os.makedirs(db_dir, exist_ok=True)
+        if self.db_path != ":memory:":
+            db_dir = os.path.dirname(self.db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+        else:
+            self._conn = sqlite3.connect(":memory:", check_same_thread=False)
+            self._conn.row_factory = sqlite3.Row
 
         self._init_db()
 
     def get_connection(self) -> sqlite3.Connection:
-        """Create a sqlite3 connection with dict cursor factory."""
+        """Create or return a sqlite3 connection with dict cursor factory."""
+        if self.db_path == ":memory:":
+            if self._conn is None:
+                self._conn = sqlite3.connect(":memory:", check_same_thread=False)
+                self._conn.row_factory = sqlite3.Row
+            return self._conn
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
