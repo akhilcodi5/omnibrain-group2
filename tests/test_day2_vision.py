@@ -106,7 +106,7 @@ async def test_vision_agent_with_crop_box():
     )
     
     assert response is not None
-    assert response.raw_markdown != ""
+    assert response.markdown_formatted_block != ""
 
 
 @pytest.mark.asyncio

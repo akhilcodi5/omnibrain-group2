@@ -58,7 +58,8 @@ def test_prompt_formatting():
 @pytest.mark.asyncio
 async def test_vision_agent_mock_inference():
     """Test VisionAgent offline mock reasoning when API key is unconfigured."""
-    agent = VisionAgent()
+    from agents.vision_agent import VisualAnalyticsIntegratorAgent
+    agent = VisualAnalyticsIntegratorAgent()
     img = Image.new("RGB", (32, 32), color="red")
     
     response = await agent.analyze_visual_asset(
