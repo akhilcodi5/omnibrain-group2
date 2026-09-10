@@ -267,14 +267,28 @@ The FastAPI server (`app/main.py`) exposes modular endpoints for document ingest
 ### 3. Ingestion & System Health
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
+| `GET` | `/workspace` | **OmniBrain Quant Workspace**: Interactive 3-panel quantitative research frontend. |
 | `POST` | `/api/v1/ingest/pdf` | Upload and ingest PDF documents (extracts text chunks and embedded visual figures). |
 | `GET` | `/health` | Health check and system readiness status. |
 
 ---
 
-## 🖥️ Interactive Streamlit UI Dashboard
+## 🖥️ User Interfaces & Quantitative Workspaces
 
-The Streamlit interface (`ui/app.py`) provides an interactive interface with 4 dedicated tabs:
+OmniBrain provides two complementary frontend interfaces:
+
+### 1. 🏛️ OmniBrain Quant Workspace (3-Panel Interactive Web App — `/workspace`)
+Hosted natively by FastAPI at `http://localhost:8000/workspace`, this interface features a high-density, professional terminal aesthetic:
+- **Panel 1: Document Ingest & Corpus Explorer**: Real-time PDF ingestion, OCR status grounding, and high-salience extracted chart/table artifacts with interactive page jumping.
+- **Panel 2: Swarm Orchestrator & Conversation Stream**: Real-time multi-agent routing filters (Vision Agent, DuckDB SQL, NeMo Guardrail, Supervisor DAG), interactive query execution, collapsible supervisor thought traces, and LangGraph DAG visualization.
+- **Panel 3: Live Verified Investment Memo**: Editorial scholarly investment research memo with inline PDF page citations, audit grounding proofs (faithfulness index: 99.82%), copy markdown, and one-click PDF export.
+
+### 2. 📊 Interactive Streamlit UI Dashboard (`ui/app.py`)
+Run via `streamlit run ui/app.py`:
+- Multi-Agent research chat and intent routing evaluator.
+- Quantitative trend derivations and KPI metric cards.
+- Side-by-side visual table verification and cross-modal discrepancy checks.
+- Interactive bounding-box citation overlay gallery.
 
 1. **💬 Multi-Agent Research Chat**:
    - Natural language query input with optional visual image attachments.

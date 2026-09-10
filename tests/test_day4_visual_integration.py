@@ -108,6 +108,13 @@ def test_fastapi_visual_routes():
     res_root = client.get("/")
     assert res_root.status_code == 200
     assert "Visual Analytics" in res_root.json().get("role_2b", "")
+    assert res_root.json().get("workspace") == "/workspace"
+
+    # Test Workspace UI Serving
+    res_ws = client.get("/workspace")
+    assert res_ws.status_code == 200
+    assert "text/html" in res_ws.headers.get("content-type", "")
+    assert "OmniBrain Quant Workspace" in res_ws.text
 
     # 2. Test Tools List Endpoint
     res_tools = client.get("/api/v1/visual/tools")

@@ -41,6 +41,8 @@ st.caption("Pod Role 2B: Visual Analytics, Cross-Modal Grounding Verification & 
 # Sidebar Controls
 with st.sidebar:
     st.header("⚙️ Analyst Workspace")
+    st.info("🚀 **OmniBrain Quant Workspace** (3-Panel UI) is live at `/workspace`!")
+    st.link_button("🌐 Launch Quant Workspace", "http://localhost:8000/workspace", use_container_width=True)
     doc_file = st.file_uploader("Upload Corporate Financial PDF", type=["pdf", "png", "jpg"])
     
     st.divider()
