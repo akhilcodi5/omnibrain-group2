@@ -781,6 +781,13 @@ Note 7 reconciles management commentary regarding multi-year Cloud customer comm
     });
   }
 
+  // Switch Corpus Tab from Header Navigation
+  function switchCorpusTab(tab) {
+    showToast('Corpus view: 10-K document and multimodal tables active');
+    const firstTabBtn = document.querySelector('.corpus-tab-btn');
+    if (firstTabBtn) filterCorpus('all', firstTabBtn);
+  }
+
   // Jump to Page
   function jumpToPage(val) {
     const pageNum = val.replace(/[^0-9]/g, '') || '1';
@@ -883,7 +890,7 @@ Note 7 reconciles management commentary regarding multi-year Cloud customer comm
         document.getElementById('active-doc-pages').textContent = `(${data.total_pages || 1} pgs)`;
         document.getElementById('doc-card-title').textContent = file.name;
         document.getElementById('doc-card-pgcount').textContent = `${data.total_pages || 1} Pgs`;
-        showToast(`✅ Ingestion complete: ${data.total_chunks || 0} chunks & ${data.total_images || 0} figures indexed!`);
+        showToast(`✅ Ingestion complete: ${data.chunks_indexed ?? data.total_chunks ?? 0} chunks & ${data.images_extracted ?? data.total_images ?? 0} figures indexed!`);
       } else {
         document.getElementById('active-doc-badge').textContent = 'Simulated';
         showToast(`Parsed ${file.name} into local sandbox.`);
