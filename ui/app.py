@@ -1,7 +1,14 @@
-"""Streamlit Dashboard for OmniBrain Multi-Modal RAG Orchestrator (Task 2B Integration)."""
-
 import base64
 import json
+import os
+import sys
+from pathlib import Path
+
+# Ensure repository root is on sys.path regardless of execution directory
+ROOT_DIR = str(Path(__file__).resolve().parent.parent)
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 import streamlit as st
 from PIL import Image
 

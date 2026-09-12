@@ -7,7 +7,7 @@
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
 [![NeMo Guardrails](https://img.shields.io/badge/Safety-NeMo%20Guardrails-purple.svg)](https://github.com/NVIDIA/NeMo-Guardrails)
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-70%2F70%20Passed-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/Tests-71%2F71%20Passed-brightgreen.svg)]()
 [![Benchmark Pass Rate](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
 
 > **OmniBrain** is an enterprise-grade, hallucination-resistant **Agentic Multi-Modal RAG (Retrieval-Augmented Generation)** platform designed for financial and quantitative research over complex enterprise PDFs containing financial statements, balance sheet tables, trend charts, bar graphs, and unstructured textual disclosures.
@@ -442,23 +442,24 @@ pip install -r requirements.txt
 
 ### 4. Running the Application
 
-**Start the FastAPI Backend**:
+**Start the FastAPI Backend & Quant Workspace**:
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-*API docs available at: `http://localhost:8000/docs`*
+- *Quant Workspace (3-Panel UI): `http://localhost:8000/workspace`*
+- *Interactive API docs: `http://localhost:8000/docs`*
 
-**Start the Streamlit Analyst UI**:
+**Start the Streamlit Visual Dashboard**:
 ```bash
-streamlit run ui/app.py
+python -m streamlit run ui/app.py
 ```
-*Access UI dashboard at: `http://localhost:8501`*
+- *Access Streamlit dashboard at: `http://localhost:8501`*
 
 ---
 
 ## 🧪 Running Automated Benchmarks & Tests
 
-### Run Full Test Suite (70 Tests)
+### Run Full Test Suite (71 Tests)
 ```bash
 python -m pytest tests/ -v
 ```
