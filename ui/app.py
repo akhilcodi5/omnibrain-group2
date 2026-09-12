@@ -4,10 +4,22 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure repository root is on sys.path regardless of execution directory
+# Remove UI directory from sys.path so ui/app.py does not shadow the root 'app' package
+UI_DIR = str(Path(__file__).resolve().parent)
 ROOT_DIR = str(Path(__file__).resolve().parent.parent)
+
+while UI_DIR in sys.path:
+    sys.path.remove(UI_DIR)
+
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
+elif sys.path[0] != ROOT_DIR:
+    sys.path.remove(ROOT_DIR)
+    sys.path.insert(0, ROOT_DIR)
+
+# Clear any cached 'app' module if it mistakenly resolved to ui/app.py
+if "app" in sys.modules and getattr(sys.modules["app"], "__file__", "") != os.path.join(ROOT_DIR, "app", "__init__.py"):
+    del sys.modules["app"]
 
 import streamlit as st
 from PIL import Image
