@@ -275,20 +275,21 @@ The FastAPI server (`app/main.py`) exposes modular endpoints for document ingest
 
 ## 🖥️ User Interfaces & Quantitative Workspaces
 
-OmniBrain provides two complementary frontend interfaces:
+OmniBrain features a state-of-the-art **npm-based modern web frontend** alongside the legacy Streamlit explorer:
 
-### 1. 🏛️ OmniBrain Quant Workspace (3-Panel Interactive Web App — `/workspace`)
-Hosted natively by FastAPI at `http://localhost:8000/workspace`, this interface features a high-density, professional terminal aesthetic:
+### 1. ⚡ OmniBrain Modern Web Application (npm + Vite)
+Located in [`frontend/`](file:///d:/omnibrain/frontend/) with Vite HMR and reverse proxying to FastAPI:
+- **Run dev server**: `npm run dev` (starts on `http://localhost:5173`)
+- **Build production bundle**: `npm run build`
 - **Panel 1: Document Ingest & Corpus Explorer**: Real-time PDF ingestion, OCR status grounding, and high-salience extracted chart/table artifacts with interactive page jumping.
 - **Panel 2: Swarm Orchestrator & Conversation Stream**: Real-time multi-agent routing filters (Vision Agent, DuckDB SQL, NeMo Guardrail, Supervisor DAG), interactive query execution, collapsible supervisor thought traces, and LangGraph DAG visualization.
 - **Panel 3: Live Verified Investment Memo**: Editorial scholarly investment research memo with inline PDF page citations, audit grounding proofs (faithfulness index: 99.82%), copy markdown, and one-click PDF export.
 
-### 2. 📊 Interactive Streamlit UI Dashboard (`ui/app.py`)
-Run via `streamlit run ui/app.py`:
-- Multi-Agent research chat and intent routing evaluator.
-- Quantitative trend derivations and KPI metric cards.
-- Side-by-side visual table verification and cross-modal discrepancy checks.
-- Interactive bounding-box citation overlay gallery.
+### 2. 🏛️ Built-in FastAPI Workspace Serving (`/workspace`)
+The compiled frontend is also served natively by FastAPI at `http://localhost:8000/workspace`.
+
+### 3. 📊 Legacy Streamlit Dashboard (`ui/app.py`)
+Run via `python -m streamlit run ui/app.py` on `http://localhost:8501`.
 
 1. **💬 Multi-Agent Research Chat**:
    - Natural language query input with optional visual image attachments.
@@ -442,14 +443,20 @@ pip install -r requirements.txt
 
 ### 4. Running the Application
 
-**Start the FastAPI Backend & Quant Workspace**:
+**Start the NPM Modern Web Frontend (Vite)**:
+```bash
+npm run dev
+```
+- *Modern Web UI (HMR): `http://localhost:5173`*
+
+**Start the FastAPI Backend**:
 ```bash
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 - *Quant Workspace (3-Panel UI): `http://localhost:8000/workspace`*
 - *Interactive API docs: `http://localhost:8000/docs`*
 
-**Start the Streamlit Visual Dashboard**:
+**Start the Streamlit Visual Dashboard** *(optional)*:
 ```bash
 python -m streamlit run ui/app.py
 ```

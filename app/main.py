@@ -46,8 +46,20 @@ async def root():
 @app.get("/ui", response_class=FileResponse, tags=["UI"])
 async def serve_workspace():
     """Serve the OmniBrain Quant Workspace 3-Panel frontend."""
+    frontend_dist_html = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist", "index.html")
+    if os.path.exists(frontend_dist_html):
+        return FileResponse(frontend_dist_html, media_type="text/html")
     ui_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ui", "index.html")
     if os.path.exists(ui_path):
         return FileResponse(ui_path, media_type="text/html")
     return HTMLResponse("<h1>OmniBrain Quant Workspace UI not found</h1>", status_code=404)
+
+
+# Mount built frontend static assets if available
+frontend_dist_assets = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist", "assets")
+if os.path.exists(frontend_dist_assets):
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/assets", StaticFiles(directory=frontend_dist_assets), name="assets")
+
 

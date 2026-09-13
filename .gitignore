@@ -75,5 +75,11 @@ storage/qdrant_data/
 .DS_Store
 Thumbs.db
 
+# Node / NPM
+node_modules/
+frontend/dist/
+.vite/
+
 # For my branch(akhil)
 plan_and_my_role.md
+
