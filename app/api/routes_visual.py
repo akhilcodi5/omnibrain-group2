@@ -96,6 +96,8 @@ async def verify_cross_modal_endpoint(req: VerifyCrossModalRequest):
             req.chart_data, req.text_context, req.tolerance_percentage
         )
         return report
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Verification endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -107,6 +109,8 @@ async def compute_trends_endpoint(req: ComputeTrendsRequest):
     try:
         trends = VisualAnalyticsEngine.analyze_chart_dataset(req.chart_data)
         return trends
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Trend computation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -120,6 +124,8 @@ async def compare_figures_endpoint(req: CompareFiguresRequest):
             req.chart_a, req.chart_b, req.comparison_label
         )
         return report
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Comparative analytics error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -143,6 +149,8 @@ async def format_memo_block_endpoint(req: FormatMemoBlockRequest):
             page_number=req.page_number,
         )
         return block
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Memo block formatting error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -162,6 +170,8 @@ async def render_citation_overlay_endpoint(req: RenderOverlayRequest):
             grounding_confidence=req.grounding_confidence,
         )
         return payload
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Overlay rendering error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -174,6 +184,8 @@ async def run_benchmark_endpoint():
         runner = BenchmarkRunner()
         card = runner.run_all_benchmarks()
         return card
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Benchmark run error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -186,6 +198,8 @@ async def extract_visual_figure_endpoint(req: VisionExtractionRequest):
         service = VisionService()
         response = await service.analyze_figure(req)
         return response
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Visual extraction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -201,6 +215,8 @@ async def extract_chart_endpoint(req: ExtractChartRequest):
             raise HTTPException(status_code=400, detail="Must provide either image_path or image_base64")
         chart_data = await service.extract_structured_chart(image_input, query_context=req.query_context)
         return chart_data
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Chart extraction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -216,6 +232,8 @@ async def extract_table_endpoint(req: ExtractTableRequest):
             raise HTTPException(status_code=400, detail="Must provide either image_path or image_base64")
         table_data = await service.extract_structured_table(image_input, query_context=req.query_context)
         return table_data
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Table extraction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -235,6 +253,8 @@ async def save_visual_asset_endpoint(req: SaveAssetRequest):
             bounding_box=req.bounding_box,
         )
         return meta
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Asset saving error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -247,6 +267,8 @@ async def list_visual_assets_endpoint(doc_id: str):
         store = get_image_store()
         assets = store.list_document_assets(doc_id)
         return assets
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Asset listing error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

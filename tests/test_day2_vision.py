@@ -123,3 +123,22 @@ async def test_structured_table_extraction():
     assert len(table_data.rows) == 6
     assert table_data.currency == "USD"
     assert table_data.key_metrics["Gross Margin"] == "64.3%"
+
+
+def test_clean_and_parse_json_markdown_fencing():
+    """Test _clean_and_parse_json unwrapping markdown code blocks and bracket fallbacks."""
+    from app.services.vlm_engine import _clean_and_parse_json
+
+    # 1. Clean JSON with markdown ticks
+    fenced = "```json\n{\"title\": \"Quarterly Revenue\", \"chart_type\": \"bar\"}\n```"
+    parsed1 = _clean_and_parse_json(fenced)
+    assert parsed1["title"] == "Quarterly Revenue"
+
+    # 2. Conversational wrapping around JSON
+    conversational = "Here is the extracted data:\n{\"status\": \"success\", \"count\": 4}\nHope this helps!"
+    parsed2 = _clean_and_parse_json(conversational)
+    assert parsed2["status"] == "success"
+    assert parsed2["count"] == 4
+
+    # 3. Empty input
+    assert _clean_and_parse_json("") == {}

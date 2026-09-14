@@ -117,7 +117,8 @@ class VisualAnalyticsEngine:
         if len(pop_growths) >= 3:
             signs = [1 if (s.get("growth_percentage") or 0) > 0 else -1 for s in pop_growths]
             sign_changes = sum(1 for i in range(1, len(signs)) if signs[i] != signs[i-1])
-            if sign_changes >= 2 and max(values) - min(values) > (sum(values)/len(values) * 0.3):
+            mean_val = sum(values) / len(values)
+            if sign_changes >= 2 and max(values) - min(values) > (abs(mean_val) * 0.3):
                 direction = TrendDirection.VOLATILE
 
         # 6. Generate Analytical Narrative Takeaway

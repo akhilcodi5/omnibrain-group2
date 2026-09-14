@@ -23,6 +23,17 @@ def test_parse_numeric_tokens():
     assert 130.3 in values
 
 
+def test_parse_numeric_tokens_negative_and_accounting():
+    """Test extracting negative numbers and accounting parenthesized notation."""
+    sample_text = "Operating margin contracted by -5.5% while net loss totaled ($12.0M) compared to -$10.0M prior."
+    tokens = CrossModalVerifier.parse_numeric_tokens(sample_text)
+
+    values = [t[0] for t in tokens]
+    assert -5.5 in values
+    assert -12.0 in values
+    assert -10.0 in values
+
+
 def test_verify_chart_against_text_exact_match():
     """Test cross-referencing where visual data points match text claims."""
     chart = ExtractedChartData(
