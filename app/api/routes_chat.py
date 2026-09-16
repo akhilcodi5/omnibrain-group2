@@ -95,13 +95,22 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
     try:
         graph = create_supervisor_graph()
 
+        # Map frontend URL paths back to local file paths
+        local_images = []
+        for img in req.referenced_images:
+            if img.startswith("/api/v1/images/"):
+                basename = img.split("/")[-1]
+                local_images.append(f"storage/extracted_images/{basename}")
+            else:
+                local_images.append(img)
+
         initial_state = {
             "messages": [],
             "query": req.query,
             "next_agent": None,
             "retrieved_docs": [],
             "visual_evidence": [],
-            "referenced_images": req.referenced_images,
+            "referenced_images": local_images,
             "sql_query": None,
             "sql_results": None,
             "is_grounded": True,

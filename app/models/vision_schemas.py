@@ -28,6 +28,7 @@ class VLMProviderType(str, Enum):
     OPENAI = "openai"
     LLAVA_OLLAMA = "llava_ollama"
     ANTHROPIC = "anthropic"
+    GEMINI = "gemini"
     MOCK = "mock"
 
 

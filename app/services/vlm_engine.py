@@ -219,6 +219,79 @@ class OllamaLLaVAEngine(BaseVisionEngine):
         return _clean_and_parse_json(content)
 
 
+class GeminiVisionEngine(BaseVisionEngine):
+    """Google Gemini REST API implementation (gemini-1.5-flash)."""
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"):
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.model = os.getenv("GEMINI_VISION_MODEL", model)
+        self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+
+    async def generate_response(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+        temperature: float = 0.1,
+    ) -> Dict[str, Any]:
+        if not self.api_key:
+            logger.error("GEMINI_API_KEY is not set.")
+            return {"raw_text": "", "error": "Missing GEMINI_API_KEY"}
+
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": f"{system_prompt}\n\n{prompt}" if system_prompt else prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": media_type,
+                            "data": base64_image
+                        }
+                    }
+                ]
+            }],
+            "generationConfig": {
+                "temperature": temperature
+            }
+        }
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            try:
+                res = await client.post(f"{self.base_url}?key={self.api_key}", json=payload)
+                res.raise_for_status()
+                data = res.json()
+                
+                content = ""
+                if "candidates" in data and len(data["candidates"]) > 0:
+                    parts = data["candidates"][0].get("content", {}).get("parts", [])
+                    if parts:
+                        content = parts[0].get("text", "")
+
+                return {
+                    "content": content,
+                    "usage": {"eval_count": 0},
+                    "model": self.model,
+                }
+            except Exception as e:
+                logger.error(f"Gemini API inference error: {str(e)}")
+                raise
+
+    async def extract_structured_json(
+        self,
+        base64_image: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        media_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        instruction = f"{prompt}\nReturn strictly JSON format."
+        result = await self.generate_response(
+            base64_image, instruction, system_prompt, media_type, temperature=0.0
+        )
+        content = result.get("content", "{}")
+        return _clean_and_parse_json(content)
+
+
 class MockVisionEngine(BaseVisionEngine):
     """Deterministic Mock VLM Engine for offline local development and unit tests."""
 
@@ -308,6 +381,13 @@ def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
 
     elif provider_str in (VLMProviderType.LLAVA_OLLAMA.value, "llava", "ollama"):
         return OllamaLLaVAEngine()
+        
+    elif provider_str in (VLMProviderType.GEMINI.value, "gemini"):
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key or api_key.startswith("your_"):
+            logger.info("Gemini API key unconfigured. Defaulting to MockVisionEngine.")
+            return MockVisionEngine()
+        return GeminiVisionEngine()
 
     elif provider_str in (VLMProviderType.MOCK.value, "mock"):
         return MockVisionEngine()
