@@ -7,7 +7,7 @@
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
 [![NeMo Guardrails](https://img.shields.io/badge/Safety-NeMo%20Guardrails-purple.svg)](https://github.com/NVIDIA/NeMo-Guardrails)
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-70%2F70%20Passed-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/Tests-71%2F71%20Passed-brightgreen.svg)]()
 [![Benchmark Pass Rate](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
 
 > **OmniBrain** is an enterprise-grade, hallucination-resistant **Agentic Multi-Modal RAG (Retrieval-Augmented Generation)** platform designed for financial and quantitative research over complex enterprise PDFs containing financial statements, balance sheet tables, trend charts, bar graphs, and unstructured textual disclosures.
@@ -267,14 +267,29 @@ The FastAPI server (`app/main.py`) exposes modular endpoints for document ingest
 ### 3. Ingestion & System Health
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
+| `GET` | `/workspace` | **OmniBrain Quant Workspace**: Interactive 3-panel quantitative research frontend. |
 | `POST` | `/api/v1/ingest/pdf` | Upload and ingest PDF documents (extracts text chunks and embedded visual figures). |
 | `GET` | `/health` | Health check and system readiness status. |
 
 ---
 
-## 🖥️ Interactive Streamlit UI Dashboard
+## 🖥️ User Interfaces & Quantitative Workspaces
 
-The Streamlit interface (`ui/app.py`) provides an interactive interface with 4 dedicated tabs:
+OmniBrain features a state-of-the-art **npm-based modern web frontend** alongside the legacy Streamlit explorer:
+
+### 1. ⚡ OmniBrain Modern Web Application (npm + Vite)
+Located in [`frontend/`](file:///d:/omnibrain/frontend/) with Vite HMR and reverse proxying to FastAPI:
+- **Run dev server**: `npm run dev` (starts on `http://localhost:5173`)
+- **Build production bundle**: `npm run build`
+- **Panel 1: Document Ingest & Corpus Explorer**: Real-time PDF ingestion, OCR status grounding, and high-salience extracted chart/table artifacts with interactive page jumping.
+- **Panel 2: Swarm Orchestrator & Conversation Stream**: Real-time multi-agent routing filters (Vision Agent, DuckDB SQL, NeMo Guardrail, Supervisor DAG), interactive query execution, collapsible supervisor thought traces, and LangGraph DAG visualization.
+- **Panel 3: Live Verified Investment Memo**: Editorial scholarly investment research memo with inline PDF page citations, audit grounding proofs (faithfulness index: 99.82%), copy markdown, and one-click PDF export.
+
+### 2. 🏛️ Built-in FastAPI Workspace Serving (`/workspace`)
+The compiled frontend is also served natively by FastAPI at `http://localhost:8000/workspace`.
+
+### 3. 📊 Legacy Streamlit Dashboard (`ui/app.py`)
+Run via `python -m streamlit run ui/app.py` on `http://localhost:8501`.
 
 1. **💬 Multi-Agent Research Chat**:
    - Natural language query input with optional visual image attachments.
@@ -428,23 +443,30 @@ pip install -r requirements.txt
 
 ### 4. Running the Application
 
+**Start the NPM Modern Web Frontend (Vite)**:
+```bash
+npm run dev
+```
+- *Modern Web UI (HMR): `http://localhost:5173`*
+
 **Start the FastAPI Backend**:
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-*API docs available at: `http://localhost:8000/docs`*
+- *Quant Workspace (3-Panel UI): `http://localhost:8000/workspace`*
+- *Interactive API docs: `http://localhost:8000/docs`*
 
-**Start the Streamlit Analyst UI**:
+**Start the Streamlit Visual Dashboard** *(optional)*:
 ```bash
-streamlit run ui/app.py
+python -m streamlit run ui/app.py
 ```
-*Access UI dashboard at: `http://localhost:8501`*
+- *Access Streamlit dashboard at: `http://localhost:8501`*
 
 ---
 
 ## 🧪 Running Automated Benchmarks & Tests
 
-### Run Full Test Suite (70 Tests)
+### Run Full Test Suite (71 Tests)
 ```bash
 python -m pytest tests/ -v
 ```

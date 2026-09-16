@@ -22,6 +22,12 @@ router = APIRouter(prefix="/api/v1", tags=["Ingestion"])
     summary="Upload and ingest a multi-modal PDF document",
     description="Parses PDF text, extracts embedded chart images, chunks text semantically, and indexes vectors into Qdrant.",
 )
+@router.post(
+    "/ingest/pdf",
+    response_model=IngestResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload and ingest a multi-modal PDF document (alias)",
+)
 async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
     """Handle asynchronous document upload, multi-modal parsing, and vector database indexing."""
     filename = file.filename or "uploaded_document.pdf"

@@ -139,6 +139,23 @@ def test_ingest_api_endpoint():
     assert len(search_results) > 0
 
 
+def test_ingest_pdf_alias_endpoint():
+    """Test POST /api/v1/ingest/pdf alias REST endpoint."""
+    pdf_bytes = create_synthetic_pdf_bytes()
+
+    response = client.post(
+        "/api/v1/ingest/pdf",
+        files={"file": ("q3_performance_alias.pdf", pdf_bytes, "application/pdf")},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["pdf_name"] == "q3_performance_alias.pdf"
+    assert data["status"] == "success"
+    assert data["total_pages"] >= 1
+
+
+
 def test_ingest_api_invalid_filetype():
     """Test uploading invalid file format returns 400 Bad Request."""
     response = client.post(

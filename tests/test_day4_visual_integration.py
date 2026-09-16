@@ -108,6 +108,13 @@ def test_fastapi_visual_routes():
     res_root = client.get("/")
     assert res_root.status_code == 200
     assert "Visual Analytics" in res_root.json().get("role_2b", "")
+    assert res_root.json().get("workspace") == "/workspace"
+
+    # Test Workspace UI Serving
+    res_ws = client.get("/workspace")
+    assert res_ws.status_code == 200
+    assert "text/html" in res_ws.headers.get("content-type", "")
+    assert "OmniBrain Quant Workspace" in res_ws.text
 
     # 2. Test Tools List Endpoint
     res_tools = client.get("/api/v1/visual/tools")
@@ -173,3 +180,26 @@ def test_fastapi_visual_routes():
     res_list_assets = client.get("/api/v1/visual/assets/doc_test_101")
     assert res_list_assets.status_code == 200
     assert len(res_list_assets.json()) >= 1
+
+    # 7. Test Missing Input Error Code (Preserved HTTP 400)
+    res_bad_extract = client.post("/api/v1/visual/extract-chart", json={})
+    assert res_bad_extract.status_code == 400
+    assert "Must provide either image_path or image_base64" in res_bad_extract.json()["detail"]
+
+
+def test_volatility_with_negative_values():
+    """Test VisualAnalyticsEngine volatility evaluation on series with negative figures (losses)."""
+    from agents.visual_analytics import VisualAnalyticsEngine
+    from app.models.vision_schemas import TrendDirection
+
+    series = ChartSeries(
+        series_name="Net Profit / Loss",
+        data_points=[
+            DataPoint(label="Q1", value=-10.0),
+            DataPoint(label="Q2", value=15.0),
+            DataPoint(label="Q3", value=-8.0),
+            DataPoint(label="Q4", value=12.0),
+        ]
+    )
+    trend = VisualAnalyticsEngine.analyze_series_trend(series)
+    assert trend.trend_direction == TrendDirection.VOLATILE

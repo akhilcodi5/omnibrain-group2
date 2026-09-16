@@ -46,6 +46,35 @@ class BaseVisionEngine(abc.ABC):
         pass
 
 
+def _clean_and_parse_json(content: str) -> Dict[str, Any]:
+    """Safely extracts and parses JSON from VLM output, handling markdown blocks and bracket boundaries."""
+    if not content or not content.strip():
+        return {}
+    cleaned = content.strip()
+    # Strip markdown code fencing if present
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+
+    try:
+        return json.loads(cleaned)
+    except (json.JSONDecodeError, TypeError):
+        # Fallback to finding outermost JSON object brackets
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and start < end:
+            try:
+                return json.loads(cleaned[start:end + 1])
+            except Exception as e:
+                logger.debug(f"Outermost bracket JSON parse fallback failed: {e}")
+        logger.error(f"Failed to parse valid JSON from VLM output: {content[:200]}")
+        return {"raw_text": content, "error": "Invalid JSON response"}
+
+
 class OpenAIVisionEngine(BaseVisionEngine):
     """VLM Engine implementation using OpenAI GPT-4o / GPT-4o-mini."""
 
@@ -135,11 +164,7 @@ class OpenAIVisionEngine(BaseVisionEngine):
         )
 
         content = response.choices[0].message.content or "{}"
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse JSON from VLM output: {content}")
-            return {"raw_text": content, "error": "Invalid JSON response"}
+        return _clean_and_parse_json(content)
 
 
 class OllamaLLaVAEngine(BaseVisionEngine):
@@ -191,15 +216,7 @@ class OllamaLLaVAEngine(BaseVisionEngine):
             base64_image, instruction, system_prompt, media_type, temperature=0.0
         )
         content = result.get("content", "{}")
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            # Simple bracket extraction fallback
-            start = content.find("{")
-            end = content.rfind("}")
-            if start != -1 and end != -1:
-                return json.loads(content[start:end+1])
-            return {"raw_text": content}
+        return _clean_and_parse_json(content)
 
 
 class MockVisionEngine(BaseVisionEngine):

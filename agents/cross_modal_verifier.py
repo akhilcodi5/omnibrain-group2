@@ -21,8 +21,8 @@ class CrossModalVerifier:
 
     # Regex patterns for extracting dollar amounts, percentages, and floats with metric contexts
     NUMBER_PATTERN = re.compile(
-        r"(?:\$|€|£)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*(?:M|B|K|%|million|billion|thousand)?",
-        re.IGNORECASE
+        r"(\(?\s*[-−–]?\s*[\$€£]?|[\$€£]?\s*[-−–]?\s*\(?)\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*(M|B|K|%|million|billion|thousand)?(\)?)",
+        re.IGNORECASE,
     )
 
     @classmethod
@@ -31,14 +31,20 @@ class CrossModalVerifier:
         results = []
         # Find sentences or chunks
         sentences = re.split(r"(?<=[.!?])\s+", text)
-        
+
         for sentence in sentences:
-            matches = list(re.finditer(r"(?:\$|€|£)?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*(M|B|K|%|million|billion|thousand)?", sentence, re.IGNORECASE))
+            matches = list(cls.NUMBER_PATTERN.finditer(sentence))
             for m in matches:
-                raw_num_str = m.group(1).replace(",", "")
-                scale_suffix = (m.group(2) or "").lower()
+                prefix = m.group(1) or ""
+                raw_num_str = m.group(2).replace(",", "")
+                scale_suffix = (m.group(3) or "").lower()
+                suffix_paren = m.group(4) or ""
+
+                is_negative = ("-" in prefix or "−" in prefix or "–" in prefix) or ("(" in prefix and ")" in suffix_paren)
                 try:
                     val = float(raw_num_str)
+                    if is_negative:
+                        val = -val
                     # Normalize scale if standard suffixes appear
                     if scale_suffix in ("m", "million"):
                         pass  # Keep in millions base or standard float
