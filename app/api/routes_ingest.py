@@ -83,6 +83,7 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
             total_pages=len(pages),
             chunks_indexed=len(inserted_ids),
             images_extracted=len(extracted_images),
+            extracted_image_paths=[img.image_path for img in extracted_images],
             status="success",
             chunk_ids=inserted_ids,
         )

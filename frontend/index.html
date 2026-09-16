@@ -98,16 +98,16 @@
 <!-- Workspace Switcher Dropdown Pill -->
 <div class="hidden sm:flex items-center gap-2 bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-outline-variant/30">
 <span class="material-symbols-outlined text-secondary text-base">domain</span>
-<span class="text-xs font-medium font-body text-on-surface">Alpha Capital • Q3 Tech &amp; Semicon</span>
+<span class="text-xs font-medium font-body text-on-surface">OmniBrain Workspace</span>
 <span class="material-symbols-outlined text-secondary text-sm">expand_more</span>
 </div>
 <!-- Active Ingest Document Status Pill -->
-<div class="hidden xl:flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 px-2.5 py-1 rounded-full text-xs">
+<div id="active-doc-pill" class="hidden items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 px-2.5 py-1 rounded-full text-xs">
 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
 <span class="material-symbols-outlined text-primary text-sm">picture_as_pdf</span>
-<span class="font-medium text-on-surface" id="active-doc-name">Alphabet_10K_FY2024.pdf</span>
-<span class="text-secondary" id="active-doc-pages">(482 pgs)</span>
-<span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide" id="active-doc-badge">Processed</span>
+<span class="font-medium text-on-surface" id="active-doc-name">--</span>
+<span class="text-secondary" id="active-doc-pages">(-- pgs)</span>
+<span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide" id="active-doc-badge">Waiting</span>
 </div>
 </div>
 <!-- Navigation Links & Meta Info -->
@@ -120,11 +120,11 @@
 <!-- Right Section Actions -->
 <div class="flex items-center gap-3">
 <!-- Status Badge -->
-<div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60 text-xs font-label">
+<div id="top-status-badge" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60 text-xs font-label">
 <span class="material-symbols-outlined text-xs text-emerald-600 fill">verified</span>
 <span>Deterministic Swarm: <strong>Active</strong></span>
 <span class="text-emerald-400">•</span>
-<span>Faithfulness: <strong id="faithfulness-stat">99.8%</strong></span>
+<span>Faithfulness: <strong id="faithfulness-stat">--%</strong></span>
 </div>
 <div class="h-5 w-px bg-surface-container-high hidden md:block"></div>
 <!-- Trailing Action Buttons -->
@@ -164,24 +164,24 @@
 <span class="text-[10px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-label font-bold">LIVE</span>
 </div>
 <!-- Tab Strip -->
-<div class="px-3 pt-2 pb-1 flex gap-1 border-b border-surface-container text-xs font-label">
+<div id="corpus-tab-strip" class="hidden px-3 pt-2 pb-1 flex gap-1 border-b border-surface-container text-xs font-label">
 <button onclick="filterCorpus('all', this)" class="corpus-tab-btn px-2.5 py-1.5 text-primary font-medium bg-surface-container-lowest rounded-md shadow-xs flex items-center gap-1">
 <span class="material-symbols-outlined text-sm">description</span>
 <span>10-K Active</span>
 </button>
-<button onclick="filterCorpus('table', this)" class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
+<button id="tab-tables" onclick="filterCorpus('table', this)" class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
 <span class="material-symbols-outlined text-sm">table_chart</span>
-<span>Tables (34)</span>
+<span>Tables (0)</span>
 </button>
-<button onclick="filterCorpus('chart', this)" class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
+<button id="tab-charts" onclick="filterCorpus('chart', this)" class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
 <span class="material-symbols-outlined text-sm">bar_chart</span>
-<span>Charts (18)</span>
+<span>Charts (0)</span>
 </button>
 </div>
 <!-- Explorer Content Area -->
 <div class="flex-1 overflow-y-auto p-3 space-y-3">
 <!-- Document Card Preview -->
-<div class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-xs">
+<div id="doc-card-container" class="hidden bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-xs">
 <div class="flex items-start justify-between gap-2 mb-2">
 <div class="flex items-center gap-2">
 <div class="w-9 h-11 bg-primary/10 rounded flex flex-col items-center justify-center text-primary shrink-0 border border-primary/20">
@@ -189,11 +189,11 @@
 <span class="text-[8px] font-bold tracking-tight">PDF</span>
 </div>
 <div class="overflow-hidden">
-<h3 class="text-xs font-semibold text-on-surface truncate" id="doc-card-title" title="Alphabet Inc. FY2024 Form 10-K">Alphabet Inc. FY2024</h3>
-<p class="text-[11px] text-secondary">SEC Edgar • Filed Feb 2025</p>
+<h3 class="text-xs font-semibold text-on-surface truncate" id="doc-card-title">Document Name</h3>
+<p class="text-[11px] text-secondary">Local Upload</p>
 </div>
 </div>
-<span class="text-[10px] font-label text-secondary bg-surface-container px-1.5 py-0.5 rounded" id="doc-card-pgcount">482 Pgs</span>
+<span class="text-[10px] font-label text-secondary bg-surface-container px-1.5 py-0.5 rounded" id="doc-card-pgcount">0 Pgs</span>
 </div>
 <!-- Page Jump & OCR Status -->
 <div class="flex items-center justify-between pt-2 border-t border-surface-container text-[11px] text-secondary">
@@ -203,68 +203,19 @@
 </span>
 <div class="flex items-center gap-1">
 <span class="text-secondary text-[10px]">Jump to:</span>
-<input onchange="jumpToPage(this.value)" class="w-14 text-center text-xs py-0.5 px-1 bg-surface-container rounded border-none font-medium text-on-surface focus:ring-1 focus:ring-primary" type="text" value="Pg 142"/>
+<input onchange="jumpToPage(this.value)" class="w-14 text-center text-xs py-0.5 px-1 bg-surface-container rounded border-none font-medium text-on-surface focus:ring-1 focus:ring-primary" type="text" value="Pg 1"/>
 </div>
 </div>
 </div>
 <!-- Parsed Multimodal Assets List -->
-<div class="space-y-2">
+<div id="artifact-list-container" class="hidden space-y-2 mt-4">
 <div class="flex items-center justify-between text-xs font-label text-secondary px-1">
 <span class="uppercase tracking-wider font-semibold text-[10px]">High-Salience Artifacts</span>
 <span onclick="filterCorpus('all')" class="text-[11px] text-primary cursor-pointer hover:underline">Inspect All</span>
 </div>
-<!-- Artifact 1: Extracted Chart -->
-<div onclick="previewArtifact('Figure 12: Cloud CapEx vs Operating Margin', 142, 'chart')" class="artifact-card group bg-surface-container-lowest hover:bg-surface-bright p-2.5 rounded-lg border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer">
-<div class="flex items-start justify-between gap-1 mb-1">
-<span class="inline-flex items-center gap-1 text-[10px] font-label font-semibold text-primary bg-primary-fixed/40 px-1.5 py-0.5 rounded">
-<span class="material-symbols-outlined text-[11px]">image</span>
-<span>Vision Agent • Pg 142</span>
-</span>
-<span class="text-[10px] text-secondary group-hover:text-primary transition-colors font-medium">Fig 12</span>
+<div id="artifact-cards-wrapper" class="space-y-3 mt-2"></div>
 </div>
-<p class="text-xs font-medium text-on-surface line-clamp-2 leading-relaxed">
-              Figure 12: Cloud CapEx vs Operating Margin (Bar chart - LLaVA extracted)
-            </p>
-<div class="mt-2 flex items-center justify-between text-[11px] text-secondary pt-1 border-t border-surface-container/60">
-<span class="text-[10px] text-emerald-700 font-medium">Reconciled YoY ($4.21B)</span>
-<span class="material-symbols-outlined text-xs text-secondary group-hover:text-primary">arrow_forward</span>
-</div>
-</div>
-<!-- Artifact 2: Reconciled Table -->
-<div onclick="previewArtifact('Item 7: MD&A Note 4 Segment Breakdown', 48, 'table')" class="artifact-card group bg-surface-container-lowest hover:bg-surface-bright p-2.5 rounded-lg border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer">
-<div class="flex items-start justify-between gap-1 mb-1">
-<span class="inline-flex items-center gap-1 text-[10px] font-label font-semibold text-tertiary bg-tertiary-fixed/40 px-1.5 py-0.5 rounded">
-<span class="material-symbols-outlined text-[11px]">database</span>
-<span>DuckDB SQL • Pg 48</span>
-</span>
-<span class="text-[10px] text-secondary group-hover:text-primary transition-colors font-medium">Note 4</span>
-</div>
-<p class="text-xs font-medium text-on-surface line-clamp-2 leading-relaxed">
-              Item 7: MD&amp;A Note 4 (Reconciled with DuckDB SQL Segment Breakdown)
-            </p>
-<div class="mt-2 flex items-center justify-between text-[11px] text-secondary pt-1 border-t border-surface-container/60">
-<span class="text-[10px] text-primary font-medium">12 rows parsed</span>
-<span class="material-symbols-outlined text-xs text-secondary group-hover:text-primary">arrow_forward</span>
-</div>
-</div>
-<!-- Artifact 3: Footnote Grounding Chunk -->
-<div onclick="previewArtifact('Commitments and Contingencies: Cloud GPU Purchase Obligations', 54, 'notes')" class="artifact-card group bg-surface-container-lowest hover:bg-surface-bright p-2.5 rounded-lg border border-outline-variant/30 hover:border-primary/40 transition-all cursor-pointer">
-<div class="flex items-start justify-between gap-1 mb-1">
-<span class="inline-flex items-center gap-1 text-[10px] font-label font-semibold text-secondary bg-surface-container px-1.5 py-0.5 rounded">
-<span class="material-symbols-outlined text-[11px]">notes</span>
-<span>Vector Chunk #1094</span>
-</span>
-<span class="text-[10px] text-secondary">Pg 54</span>
-</div>
-<p class="text-xs font-medium text-on-surface line-clamp-2 leading-relaxed">
-              Commitments and Contingencies: Cloud GPU Purchase Obligations FY25-27
-            </p>
-<div class="mt-2 flex items-center justify-between text-[11px] text-secondary pt-1 border-t border-surface-container/60">
-<span class="text-[10px] text-secondary font-medium">Cosine Sim: 0.941</span>
-<span class="material-symbols-outlined text-xs text-secondary group-hover:text-primary">arrow_forward</span>
-</div>
-</div>
-</div>
+<!-- Upload New Document Drag & Drop Area -->
 <!-- Upload New Document Drag & Drop Area -->
 <label class="border-2 border-dashed border-outline-variant/60 rounded-xl p-4 text-center hover:bg-surface-container transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5 block">
 <input type="file" accept=".pdf" class="hidden" onchange="handleFileUpload(event)"/>
@@ -297,7 +248,7 @@
 <div class="absolute left-3.5 flex items-center pointer-events-none text-primary">
 <span class="material-symbols-outlined text-xl">auto_awesome</span>
 </div>
-<input id="query-input" onkeydown="if(event.key==='Enter') executeAnalystQuery()" class="w-full pl-11 pr-24 py-2.5 bg-surface-container-low text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70" placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&amp;D headcount vs amortization')..." type="text" value="Synthesize Q3 CapEx trajectory and verify against operating margin guidance in Note 7."/>
+<input id="query-input" onkeydown="if(event.key==='Enter') executeAnalystQuery()" class="w-full pl-11 pr-24 py-2.5 bg-surface-container-low text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:bg-surface-container-lowest focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70" placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&amp;D headcount vs amortization')..." type="text" value=""/>
 <button id="execute-btn" onclick="executeAnalystQuery()" class="absolute right-2 px-3 py-1.5 bg-primary text-on-primary text-xs font-semibold rounded-lg hover:bg-primary-container transition-all flex items-center gap-1 shadow-xs">
 <span>Execute</span>
 <span class="material-symbols-outlined text-sm">arrow_forward</span>
@@ -331,122 +282,8 @@
 </div>
 <!-- Agent Activity Stream & Trace -->
 <div class="flex-1 overflow-y-auto p-5 space-y-5">
-<div class="max-w-3xl mx-auto space-y-4">
-<!-- User Intent Bubble -->
-<div class="flex items-start gap-3 justify-end">
-<div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm px-4 py-3 max-w-xl shadow-xs">
-<p class="text-sm font-medium leading-relaxed" id="user-bubble-text">
-                Analyze Q3 CapEx vs Operating Margin changes and reconcile with CEO guidance in Note 7.
-              </p>
-<div class="mt-1 flex items-center justify-end gap-1.5 text-[10px] text-on-primary/80">
-<span id="user-bubble-time">10:42 AM</span>
-<span>•</span>
-<span>Lead Analyst Request</span>
-</div>
-</div>
-<div class="w-8 h-8 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-primary/20">
-              QA
-            </div>
-</div>
-<!-- Dynamic LangGraph Supervisor Trace Card -->
-<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
-<!-- Card Header / Collapsible Control -->
-<div class="p-3.5 bg-surface-container-low flex items-center justify-between border-b border-surface-container cursor-pointer" onclick="toggleTraceContent()">
-<div class="flex items-center gap-2.5">
-<div class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center">
-<span class="material-symbols-outlined text-sm">hub</span>
-</div>
-<div>
-<h4 class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-<span>LangGraph Supervisor Orchestration</span>
-<span class="text-[10px] bg-emerald-100 text-emerald-800 font-label font-bold px-1.5 py-0.2 rounded" id="trace-badge">Converged in 1.42s</span>
-</h4>
-<p class="text-[11px] text-secondary">3 Sub-Agents executed deterministically with cross-validation</p>
-</div>
-</div>
-<div class="flex items-center gap-2">
-<button onclick="event.stopPropagation(); showGraphDAGModal()" class="text-xs text-primary font-medium hover:underline flex items-center gap-1">
-<span>View Graph DAG</span>
-<span class="material-symbols-outlined text-sm">schema</span>
-</button>
-<button class="p-1 text-secondary hover:text-on-surface rounded">
-<span class="material-symbols-outlined text-base" id="trace-expand-icon">expand_less</span>
-</button>
-</div>
-</div>
-<!-- Trace Agent Rows -->
-<div class="p-4 space-y-3" id="trace-content">
-<!-- Agent Step 1: Vision Agent -->
-<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/60">
-<div class="w-7 h-7 rounded-lg bg-blue-100 text-primary flex items-center justify-center shrink-0 mt-0.5">
-<span class="material-symbols-outlined text-base">visibility</span>
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex items-center justify-between gap-2 mb-1">
-<span class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-<span>Vision Agent (GPT-4o Multimodal OCR)</span>
-<span class="text-[10px] bg-surface-container px-1 rounded text-secondary font-label">T=0.34s</span>
-</span>
-<span class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">Bounding Box Verified</span>
-</div>
-<p class="text-xs text-on-surface-variant leading-relaxed mb-2">
-                    Extracted graphical coordinates for <em>Figure 12: Cloud CapEx vs Operating Margin</em> on <strong>Page 142</strong>. Identified YoY segment CapEx trajectory: Q3 FY24 CapEx calculated at <strong>$4.21B</strong> (vs $3.29B in Q3 FY23, +27.9%).
-                  </p>
-<!-- Mini rendered preview thumbnail of the chart -->
-<div class="flex items-center gap-3 p-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 cursor-pointer" onclick="previewArtifact('Figure 12: Cloud CapEx vs Operating Margin', 142, 'chart')">
-<div class="w-16 h-12 bg-primary/5 rounded border border-primary/20 flex flex-col justify-end p-1 gap-0.5">
-<div class="flex items-end gap-1 h-full justify-center">
-<div class="w-2.5 bg-secondary-fixed-dim h-1/2 rounded-xs"></div>
-<div class="w-2.5 bg-primary h-5/6 rounded-xs"></div>
-<div class="w-2.5 bg-primary-container h-full rounded-xs"></div>
-</div>
-</div>
-<div class="text-[11px]">
-<p class="font-medium text-on-surface">Figure 12 Render Vector</p>
-<p class="text-secondary text-[10px]">Cloud GPU &amp; TPU cluster investments isolated</p>
-</div>
-</div>
-</div>
-</div>
-<!-- Agent Step 2: SQL Agent -->
-<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/60">
-<div class="w-7 h-7 rounded-lg bg-amber-100 text-tertiary flex items-center justify-center shrink-0 mt-0.5">
-<span class="material-symbols-outlined text-base">query_stats</span>
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex items-center justify-between gap-2 mb-1">
-<span class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-<span>SQL Agent (Embedded DuckDB WASM)</span>
-<span class="text-[10px] bg-surface-container px-1 rounded text-secondary font-label">T=0.18s</span>
-</span>
-<span class="text-[10px] text-tertiary font-label font-semibold">DuckDB v1.1.2</span>
-</div>
-<p class="text-xs text-on-surface-variant leading-relaxed mb-2">
-                    Queried parsed MD&amp;A statement tables. Computed operating margin variance: Reported 29.8% vs implied guidance mid-point of 28.0% (<strong>+180 bps outperformance</strong>), offsetting incremental CapEx depreciation.
-                  </p>
-<div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/30 font-mono text-[11px] text-secondary overflow-x-auto">
-<code>SELECT segment, SUM(capex_usd_m) as capex, AVG(op_margin) FROM filings_q3 GROUP BY 1 HAVING segment='Google Cloud';</code>
-</div>
-</div>
-</div>
-<!-- Agent Step 3: Guardrail Agent -->
-<div class="flex items-start gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/60">
-<div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
-<span class="material-symbols-outlined text-base">verified</span>
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex items-center justify-between gap-2 mb-1">
-<span class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-<span>NeMo Guardrail Engine</span>
-<span class="text-[10px] bg-surface-container px-1 rounded text-secondary font-label">T=0.09s</span>
-</span>
-<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded font-label">100% Grounded</span>
-</div>
-<p class="text-xs text-on-surface-variant leading-relaxed">
-                    Context faithfulness verified with 0 hallucinations across 3 textual anchors. Passed strict SEC Reg FD compliance filter and numerical parity verification.
-                  </p>
-</div>
-</div>
+<div id="trace-container" class="max-w-3xl mx-auto space-y-4">
+  <!-- Dynamic Trace Items will be injected here -->
 </div>
 </div>
 <!-- Interactive Quick Prompt Suggestion Chips -->
@@ -497,78 +334,18 @@
 <!-- Document Title & Meta -->
 <div>
 <span class="font-label text-[11px] uppercase tracking-wider text-secondary font-semibold">Equity Research Synthesis</span>
-<h1 class="text-xl font-bold text-on-surface mt-1 leading-snug" id="memo-title">Alphabet Q3 FY24 CapEx Trajectory &amp; Operating Margin Reconciled</h1>
-<p class="font-body text-xs text-secondary mt-1" id="memo-meta">Generated Nov 14, 2024 • Model: OmniBrain Quant Swarm v2.4</p>
+<h1 class="text-xl font-bold text-on-surface mt-1 leading-snug" id="memo-title">Awaiting Instructions</h1>
+<p class="font-body text-xs text-secondary mt-1" id="memo-meta">Model: OmniBrain Quant Swarm v2.4</p>
 </div>
 <div class="h-px bg-surface-container"></div>
 <!-- Section 1: Executive Summary -->
 <section class="space-y-2">
-<h3 class="font-headline font-bold text-sm text-on-surface tracking-tight flex items-center justify-between">
-<span>1. Executive Summary</span>
-<span class="font-label text-[10px] text-tertiary bg-tertiary-fixed/30 px-1.5 py-0.2 rounded font-medium">Audited</span>
-</h3>
-<p class="font-headline text-xs text-on-surface/90 leading-relaxed" id="memo-exec-text">
-            Alphabet's capital expenditures expanded to <strong>$4.21B</strong> during the quarter, driven overwhelmingly by high-density TPU/GPU infrastructure allocations in the Google Cloud segment 
-            <button onclick="jumpToPage('142'); previewArtifact('Figure 12: Cloud CapEx vs Operating Margin', 142, 'chart')" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 bg-primary-fixed/50 hover:bg-primary-fixed text-primary font-body text-[10px] font-semibold rounded transition-colors" title="Jump to PDF Page 142 Figure 12">
-<span class="material-symbols-outlined text-[11px]">pin_drop</span>
-<span>Pg 142 • Fig 12</span>
-</button>. 
-            Contrary to sell-side margin compression concerns, enterprise operating margin expanded by <strong>+180 bps</strong> to 29.8%, effectively absorbing depreciation headwinds 
-            <button onclick="jumpToPage('48'); previewArtifact('Item 7: MD&A Note 4 Segment Breakdown', 48, 'table')" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 bg-primary-fixed/50 hover:bg-primary-fixed text-primary font-body text-[10px] font-semibold rounded transition-colors" title="Jump to Note 7 SEC filing">
-<span class="material-symbols-outlined text-[11px]">pin_drop</span>
-<span>Pg 48 • Note 7</span>
-</button>.
-          </p>
-</section>
-<!-- Embedded Table / Reconciled Data -->
-<section class="space-y-2 pt-2">
-<h3 class="font-headline font-bold text-sm text-on-surface tracking-tight">
-            2. CapEx vs Margin Parity Table
-          </h3>
-<div class="bg-surface-container-low rounded-lg p-2.5 border border-outline-variant/30 font-body">
-<table class="w-full text-left text-[11px]">
-<thead>
-<tr class="border-b border-surface-container-high text-secondary font-label">
-<th class="pb-1.5 font-semibold">Metric</th>
-<th class="pb-1.5 font-semibold text-right">Q3 FY23</th>
-<th class="pb-1.5 font-semibold text-right">Q3 FY24</th>
-<th class="pb-1.5 font-semibold text-right">YoY Δ</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-surface-container/60 text-on-surface">
-<tr>
-<td class="py-1.5 font-medium">Cloud CapEx ($B)</td>
-<td class="py-1.5 text-right font-mono">$3.29</td>
-<td class="py-1.5 text-right font-mono font-bold text-primary">$4.21</td>
-<td class="py-1.5 text-right text-emerald-700 font-medium">+27.9%</td>
-</tr>
-<tr>
-<td class="py-1.5 font-medium">Op Margin (%)</td>
-<td class="py-1.5 text-right font-mono">28.0%</td>
-<td class="py-1.5 text-right font-mono font-bold">29.8%</td>
-<td class="py-1.5 text-right text-emerald-700 font-medium">+180 bps</td>
-</tr>
-<tr>
-<td class="py-1.5 font-medium">GPU Utilization</td>
-<td class="py-1.5 text-right font-mono">72.1%</td>
-<td class="py-1.5 text-right font-mono font-bold">88.4%</td>
-<td class="py-1.5 text-right text-emerald-700 font-medium">+16.3%</td>
-</tr>
-</tbody>
-</table>
+<div id="dynamic-memo-content" class="text-on-surface/90 leading-relaxed font-headline text-xs space-y-3 prose prose-sm prose-invert max-w-none">
+  <!-- Dynamic markdown content will be injected here -->
 </div>
 </section>
-<!-- Section 3: CEO Guidance & Qualitative Verification -->
-<section class="space-y-2 pt-2">
-<h3 class="font-headline font-bold text-sm text-on-surface tracking-tight">
-            3. Qualitative Re-evaluation
-          </h3>
-<p class="font-headline text-xs text-on-surface/90 leading-relaxed" id="memo-qualitative-text">
-            Note 7 reconciles management commentary regarding multi-year Cloud customer commitments. NeMo Guardrail audit asserts with 99.8% contextual confidence that depreciation periods remain constant at 6 years for server architecture.
-          </p>
-</section>
 <!-- Audit & Grounding Proof Drawer -->
-<div class="bg-surface-container rounded-xl p-3 border border-outline-variant/30 space-y-2 font-body">
+<div id="grounding-proof-container" class="hidden bg-surface-container rounded-xl p-3 border border-outline-variant/30 space-y-2 font-body">
 <div class="flex items-center justify-between text-xs font-label">
 <span class="font-bold text-on-surface flex items-center gap-1">
 <span class="material-symbols-outlined text-sm text-emerald-600 fill">verified_user</span>
@@ -579,7 +356,7 @@
 <div class="grid grid-cols-2 gap-2 text-[11px]">
 <div class="bg-surface-container-lowest p-2 rounded-lg">
 <p class="text-[10px] text-secondary font-label uppercase">Citation Grounding</p>
-<p class="text-xs font-bold text-primary">100.0% (3/3 Bounding)</p>
+<p class="text-xs font-bold text-primary" id="citation-grounding-stat">100.0% (0/0 Bounding)</p>
 </div>
 <div class="bg-surface-container-lowest p-2 rounded-lg">
 <p class="text-[10px] text-secondary font-label uppercase">Faithfulness Index</p>

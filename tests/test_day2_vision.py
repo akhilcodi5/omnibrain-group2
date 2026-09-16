@@ -14,6 +14,7 @@ from app.models.vision_schemas import (
 from app.services.image_preprocessor import ImagePreprocessor
 from app.services.vision_service import VisionService
 from app.services.vlm_engine import (
+    GeminiVisionEngine,
     MockVisionEngine,
     OllamaLLaVAEngine,
     OpenAIVisionEngine,
@@ -67,12 +68,15 @@ def test_image_preprocessor_vlm_metadata():
 
 
 def test_vlm_engine_factory():
-    """Test engine factory instantiation for mock, ollama, and openai."""
+    """Test engine factory instantiation for mock, ollama, openai, and gemini."""
     mock_engine = get_vision_engine("mock")
     assert isinstance(mock_engine, MockVisionEngine)
 
     ollama_engine = get_vision_engine("ollama")
     assert isinstance(ollama_engine, OllamaLLaVAEngine)
+
+    gemini_engine = get_vision_engine("gemini")
+    assert isinstance(gemini_engine, (GeminiVisionEngine, MockVisionEngine))
 
 
 @pytest.mark.asyncio
@@ -106,7 +110,7 @@ async def test_vision_agent_with_crop_box():
     )
     
     assert response is not None
-    assert response.raw_markdown != ""
+    assert response.markdown_formatted_block != ""
 
 
 @pytest.mark.asyncio

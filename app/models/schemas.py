@@ -42,6 +42,7 @@ class IngestResponse(BaseModel):
     total_pages: int = Field(..., description="Total pages parsed")
     chunks_indexed: int = Field(..., description="Number of text chunks indexed in vector store")
     images_extracted: int = Field(..., description="Number of figure/chart images extracted")
+    extracted_image_paths: List[str] = Field(default_factory=list, description="Local paths to extracted figure/chart images")
     status: str = Field("success", description="Status message")
     chunk_ids: List[str] = Field(default_factory=list, description="List of generated chunk IDs")
 

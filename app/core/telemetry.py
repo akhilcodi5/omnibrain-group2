@@ -37,7 +37,12 @@ class TelemetryManager:
                     secret_key=self.secret_key,
                     host=self.host,
                 )
-                logger.info("Langfuse telemetry client initialized successfully.")
+                if not hasattr(self._langfuse_client, "trace"):
+                    logger.warning("Installed Langfuse SDK (v4+) is incompatible with legacy v3 telemetry logic. Disabling external tracing.")
+                    self.is_enabled = False
+                    self._langfuse_client = None
+                else:
+                    logger.info("Langfuse telemetry client initialized successfully.")
             except Exception as e:
                 logger.warning(f"Failed to initialize Langfuse SDK ({e}). Falling back to in-memory tracing.")
                 self.is_enabled = False
