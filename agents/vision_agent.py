@@ -4,6 +4,7 @@ Handles downstream reasoning, mathematical trend analysis, cross-modal grounding
 iterative Self-RAG fact-checking, and executive memo formatting for visual figures in LangGraph.
 """
 
+import base64
 import logging
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
@@ -95,13 +96,19 @@ class VisualAnalyticsIntegratorAgent:
         4. Synthesize into an executive memo block
         """
         # 1. Base extraction
-        request = VisionExtractionRequest(
-            image_input=image_input,
-            query_context=query_context,
-            expected_type=expected_type or ChartType.BAR,
-            crop_box=crop_box,
-            page_number=page_number,
-        )
+        kwargs = {
+            "query_context": query_context,
+            "expected_type": expected_type or ChartType.BAR,
+            "crop_box": crop_box,
+            "page_number": page_number,
+        }
+        
+        if isinstance(image_input, str):
+            kwargs["image_path"] = image_input
+        elif isinstance(image_input, bytes):
+            kwargs["image_base64"] = base64.b64encode(image_input).decode('utf-8')
+            
+        request = VisionExtractionRequest(**kwargs)
 
         extraction_resp = await self.service.analyze_figure(request)
         

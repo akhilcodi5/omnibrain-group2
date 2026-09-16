@@ -1,6 +1,7 @@
 """Multi-Engine VLM Interface supporting OpenAI GPT-4o, local LLaVA (Ollama), and Mocking."""
 
 import abc
+import asyncio
 import json
 import logging
 import os
@@ -220,9 +221,9 @@ class OllamaLLaVAEngine(BaseVisionEngine):
 
 
 class GeminiVisionEngine(BaseVisionEngine):
-    """Google Gemini REST API implementation (gemini-1.5-flash)."""
+    """Google Gemini REST API implementation (gemini-flash-latest)."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-flash-latest"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = os.getenv("GEMINI_VISION_MODEL", model)
         self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
@@ -257,25 +258,37 @@ class GeminiVisionEngine(BaseVisionEngine):
         }
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            try:
-                res = await client.post(f"{self.base_url}?key={self.api_key}", json=payload)
-                res.raise_for_status()
-                data = res.json()
-                
-                content = ""
-                if "candidates" in data and len(data["candidates"]) > 0:
-                    parts = data["candidates"][0].get("content", {}).get("parts", [])
-                    if parts:
-                        content = parts[0].get("text", "")
-
-                return {
-                    "content": content,
-                    "usage": {"eval_count": 0},
-                    "model": self.model,
-                }
-            except Exception as e:
-                logger.error(f"Gemini API inference error: {str(e)}")
-                raise
+            max_retries = 3
+            retry_delay = 4.0
+            
+            for attempt in range(max_retries + 1):
+                try:
+                    res = await client.post(f"{self.base_url}?key={self.api_key}", json=payload)
+                    res.raise_for_status()
+                    data = res.json()
+                    
+                    content = ""
+                    if "candidates" in data and len(data["candidates"]) > 0:
+                        parts = data["candidates"][0].get("content", {}).get("parts", [])
+                        if parts:
+                            content = parts[0].get("text", "")
+    
+                    return {
+                        "content": content,
+                        "usage": {"eval_count": 0},
+                        "model": self.model,
+                    }
+                except httpx.HTTPStatusError as e:
+                    if (e.response.status_code == 429 or e.response.status_code >= 500) and attempt < max_retries:
+                        logger.warning(f"Gemini API transient error ({e.response.status_code}). Retrying in {retry_delay}s... (Attempt {attempt+1}/{max_retries})")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    logger.error(f"Gemini API inference error: {str(e)}")
+                    raise
+                except Exception as e:
+                    logger.error(f"Gemini API inference error: {str(e)}")
+                    raise
 
     async def extract_structured_json(
         self,

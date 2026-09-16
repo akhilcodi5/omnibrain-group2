@@ -2,6 +2,7 @@
 
 import logging
 import time
+import urllib.parse
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -100,6 +101,7 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
         for img in req.referenced_images:
             if img.startswith("/api/v1/images/"):
                 basename = img.split("/")[-1]
+                basename = urllib.parse.unquote(basename)
                 local_images.append(f"storage/extracted_images/{basename}")
             else:
                 local_images.append(img)
