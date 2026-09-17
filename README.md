@@ -402,31 +402,29 @@ cd omnibrain-group2
 git checkout mallikarjun
 ```
 
-Create and populate your `.env` file:
-
-```env
-# VLM Provider Selection (openai / ollama / mock)
-VLM_PROVIDER=openai
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o
-
-# Local Ollama Provider (optional)
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_VISION_MODEL=llava:13b
-
-# Qdrant Vector DB
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_COLLECTION_NAME=omnibrain_docs
-
-# SQL Database
-DATABASE_URL=sqlite:///./storage/financial_data.db
-
-# Observability
-LANGFUSE_PUBLIC_KEY=your_public_key
-LANGFUSE_SECRET_KEY=your_secret_key
-LANGFUSE_HOST=https://cloud.langfuse.com
-```
+> [!IMPORTANT]
+> **API Key Setup for Team Members:**
+> 1. Copy `.env.example` to create your private `.env` file (this file is excluded by `.gitignore` so your API key will **never** be committed or pushed to GitHub):
+>    ```bash
+>    cp .env.example .env
+>    ```
+> 2. Open `.env` and configure your preferred Vision-Language Model provider and your own API key:
+>
+>    ```env
+>    # Option A: Google Gemini (Recommended - Free keys at https://aistudio.google.com/)
+>    VLM_PROVIDER=gemini
+>    GEMINI_API_KEY=your_actual_gemini_api_key_here
+>    GEMINI_VISION_MODEL=gemini-flash-latest
+>
+>    # Option B: OpenAI GPT-4o
+>    VLM_PROVIDER=openai
+>    OPENAI_API_KEY=your_openai_api_key_here
+>    OPENAI_MODEL=gpt-4o
+>
+>    # Option C: Offline Mock Mode (Zero API keys needed - works 100% offline)
+>    VLM_PROVIDER=mock
+>    ```
+> 3. Each team member should provide their **own** Gemini or OpenAI API key in their local `.env` file. Never commit raw API keys to Git.
 
 ### 3. Installation
 
