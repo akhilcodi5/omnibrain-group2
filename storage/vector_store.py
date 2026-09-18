@@ -97,8 +97,8 @@ class VectorStore:
                 # Test connection
                 self.client.get_collections()
             except Exception as e:
-                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to in-memory mode.")
-                self.client = QdrantClient(location=":memory:")
+                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to persistent disk mode.")
+                self.client = QdrantClient(path="storage/qdrant_data")
 
         self.ensure_collection_exists()
 
@@ -300,7 +300,7 @@ class VectorStore:
 _vector_store_instance: Optional[VectorStore] = None
 
 
-def get_vector_store(in_memory: bool = True) -> VectorStore:
+def get_vector_store(in_memory: bool = False) -> VectorStore:
     """Factory function for retrieving or initializing the singleton VectorStore instance."""
     global _vector_store_instance
     if _vector_store_instance is None:

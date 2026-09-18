@@ -61,7 +61,7 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
         chunks = chunker.chunk_pages(pages, pdf_name=filename)
 
         # 4. Bulk index chunks into Qdrant VectorStore
-        vector_store = get_vector_store(in_memory=True)
+        vector_store = get_vector_store(in_memory=False)
         doc_payloads = [
             {
                 "chunk_id": chunk.chunk_id,

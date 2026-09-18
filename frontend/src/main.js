@@ -285,7 +285,7 @@ export async function executeAnalystQuery() {
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
   // Dynamically inject User Bubble
-  const traceContainer = document.getElementById('trace-container');
+  const traceContainer = document.getElementById('chat-stream');
   if (traceContainer) {
     const userBubble = `
       <div class="flex items-start gap-3 justify-end">

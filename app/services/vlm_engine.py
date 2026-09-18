@@ -221,9 +221,9 @@ class OllamaLLaVAEngine(BaseVisionEngine):
 
 
 class GeminiVisionEngine(BaseVisionEngine):
-    """Google Gemini REST API implementation (gemini-flash-latest)."""
+    """Google Gemini REST API implementation (gemini-3.5-flash-lite)."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-flash-latest"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.5-flash-lite"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = os.getenv("GEMINI_VISION_MODEL", model)
         self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
@@ -237,8 +237,7 @@ class GeminiVisionEngine(BaseVisionEngine):
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
         if not self.api_key:
-            logger.error("GEMINI_API_KEY is not set.")
-            return {"raw_text": "", "error": "Missing GEMINI_API_KEY"}
+            raise ValueError("GEMINI_API_KEY is missing. Please set it in your .env file.")
 
         payload = {
             "contents": [{
@@ -253,12 +252,16 @@ class GeminiVisionEngine(BaseVisionEngine):
                 ]
             }],
             "generationConfig": {
-                "temperature": temperature
+                "temperature": temperature,
+                "maxOutputTokens": 8192
             }
         }
 
+        # Strict 5-second pacing gap
+        await asyncio.sleep(5)
+
         async with httpx.AsyncClient(timeout=60.0) as client:
-            max_retries = 3
+            max_retries = 5
             retry_delay = 4.0
             
             for attempt in range(max_retries + 1):
@@ -388,8 +391,7 @@ def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
     if provider_str in (VLMProviderType.OPENAI.value, "openai"):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key or api_key.startswith("your_"):
-            logger.info("OpenAI API key unconfigured. Defaulting to MockVisionEngine.")
-            return MockVisionEngine()
+            raise ValueError("OPENAI_API_KEY is missing. Please set it in your .env file.")
         return OpenAIVisionEngine()
 
     elif provider_str in (VLMProviderType.LLAVA_OLLAMA.value, "llava", "ollama"):
@@ -398,8 +400,7 @@ def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
     elif provider_str in (VLMProviderType.GEMINI.value, "gemini"):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key or api_key.startswith("your_"):
-            logger.info("Gemini API key unconfigured. Defaulting to MockVisionEngine.")
-            return MockVisionEngine()
+            raise ValueError("GEMINI_API_KEY is missing. Please set it in your .env file.")
         return GeminiVisionEngine()
 
     elif provider_str in (VLMProviderType.MOCK.value, "mock"):

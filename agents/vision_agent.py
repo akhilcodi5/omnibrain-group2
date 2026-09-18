@@ -6,6 +6,7 @@ iterative Self-RAG fact-checking, and executive memo formatting for visual figur
 
 import base64
 import logging
+import re
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
 from PIL import Image
@@ -176,7 +177,7 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Executing Visual Analytics & Multi-Modal Tool Integrator Node in LangGraph...")
     
-    vector_store = state.get("vector_store") or get_vector_store(in_memory=True)
+    vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     agent = VisualAnalyticsIntegratorAgent(vector_store=vector_store)
     query = state.get("query", "")
     referenced_images: List[str] = state.get("referenced_images", [])
@@ -193,13 +194,36 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     memo_blocks: List[VisualAnalyticalMemoBlock] = []
     citations = []
 
+    # Filter contextually relevant images using RAG retrieved documents' page numbers
+    if retrieved_docs and referenced_images:
+        relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
+        if relevant_pages:
+            filtered_images = []
+            for img in referenced_images:
+                match = re.search(r'_p(\d+)_', img)
+                if match:
+                    img_page = int(match.group(1))
+                    if img_page in relevant_pages:
+                        filtered_images.append(img)
+                else:
+                    # Keep images if we cannot parse their page number
+                    filtered_images.append(img)
+            
+            logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
+            referenced_images = filtered_images
+
     if referenced_images:
         for idx, img_path in enumerate(referenced_images):
+            img_page = idx + 1
+            match = re.search(r'_p(\d+)_', img_path)
+            if match:
+                img_page = int(match.group(1))
+
             memo_block = await agent.analyze_and_verify_figure(
                 image_input=img_path,
                 text_context=text_context if text_context else None,
                 query_context=query,
-                page_number=idx + 1,
+                page_number=img_page,
             )
             memo_blocks.append(memo_block)
             citations.append({

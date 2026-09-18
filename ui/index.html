@@ -531,73 +531,7 @@ Verified • Zero Hallucination
 <p class="font-body text-xs text-secondary mt-1" id="memo-meta">Generated Nov 14, 2024 • Model: OmniBrain Quant Swarm v2.4</p>
 </div>
 <div class="h-px bg-surface-container"></div>
-<!-- Section 1: Executive Summary -->
-<section class="space-y-2" id="memo-exec-summary">
-<h3 class="font-headline font-bold text-sm text-on-surface tracking-tight flex items-center justify-between">
-<span>1. Executive Summary</span>
-<span class="font-label text-[10px] text-tertiary bg-tertiary-fixed/30 px-1.5 py-0.2 rounded font-medium">Audited</span>
-</h3>
-<p class="font-headline text-xs text-on-surface/90 leading-relaxed" id="memo-exec-text">
-Alphabet's capital expenditures expanded to <strong>$4.21B</strong> during the quarter, driven overwhelmingly by high-density TPU/GPU infrastructure allocations in the Google Cloud segment 
-<button onclick="previewArtifact('Figure 12: Cloud CapEx vs Operating Margin', 'Page 142', 'chart')" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 bg-primary-fixed/50 hover:bg-primary-fixed text-primary font-body text-[10px] font-semibold rounded transition-colors" title="Jump to PDF Page 142 Figure 12">
-<span class="material-symbols-outlined text-[11px]">pin_drop</span>
-<span>Pg 142 • Fig 12</span>
-</button>. 
-Contrary to sell-side margin compression concerns, enterprise operating margin expanded by <strong>+180 bps</strong> to 29.8%, effectively absorbing depreciation headwinds 
-<button onclick="previewArtifact('Item 7: MD&A Note 4 Segment Breakdown', 'Page 48', 'table')" class="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-0.5 bg-primary-fixed/50 hover:bg-primary-fixed text-primary font-body text-[10px] font-semibold rounded transition-colors" title="Jump to Note 7 SEC filing">
-<span class="material-symbols-outlined text-[11px]">pin_drop</span>
-<span>Pg 48 • Note 7</span>
-</button>.
-</p>
-</section>
-<!-- Embedded Table / Reconciled Data -->
-<section class="space-y-2 pt-2" id="memo-parity-section">
-<h3 class="font-headline font-bold text-sm text-on-surface tracking-tight">
-2. CapEx vs Margin Parity Table
-</h3>
-<div class="bg-surface-container-low rounded-lg p-2.5 border border-outline-variant/30 font-body" id="parity-table-container">
-<table class="w-full text-left text-[11px]">
-<thead>
-<tr class="border-b border-surface-container-high text-secondary font-label">
-<th class="pb-1.5 font-semibold">Metric</th>
-<th class="pb-1.5 font-semibold text-right">Q3 FY23</th>
-<th class="pb-1.5 font-semibold text-right">Q3 FY24</th>
-<th class="pb-1.5 font-semibold text-right">YoY Δ</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-surface-container/60 text-on-surface" id="parity-tbody">
-<tr>
-<td class="py-1.5 font-medium">Cloud CapEx ($B)</td>
-<td class="py-1.5 text-right font-mono">$3.29</td>
-<td class="py-1.5 text-right font-mono font-bold text-primary">$4.21</td>
-<td class="py-1.5 text-right text-emerald-700 font-medium">+27.9%</td>
-</tr>
-<tr>
-<td class="py-1.5 font-medium">Op Margin (%)</td>
-<td class="py-1.5 text-right font-mono">28.0%</td>
-<td class="py-1.5 text-right font-mono font-bold">29.8%</td>
-<td class="py-1.5 text-right text-emerald-700 font-medium">+180 bps</td>
-</tr>
-<tr>
-<td class="py-1.5 font-medium">GPU Utilization</td>
-<td class="py-1.5 text-right font-mono">72.1%</td>
-<td class="py-1.5 text-right font-mono font-bold">88.4%</td>
-<td class="py-1.5 text-right text-emerald-700 font-medium">+16.3%</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<!-- Section 3: CEO Guidance & Qualitative Verification -->
-<section class="space-y-2 pt-2" id="memo-qualitative-section">
-<h3 class="font-headline font-bold text-sm text-on-surface tracking-tight">
-3. Qualitative Re-evaluation
-</h3>
-<p class="font-headline text-xs text-on-surface/90 leading-relaxed" id="memo-qualitative-text">
-Note 7 reconciles management commentary regarding multi-year Cloud customer commitments. NeMo Guardrail audit asserts with 99.8% contextual confidence that depreciation periods remain constant at 6 years for server architecture.
-</p>
-</section>
-<!-- Audit & Grounding Proof Drawer -->
+<div id="dynamic-memo-content" class="prose prose-sm prose-slate max-w-none mt-4 pb-12"></div>
 <div class="bg-surface-container rounded-xl p-3 border border-outline-variant/30 space-y-2 font-body" id="memo-audit-drawer">
 <div class="flex items-center justify-between text-xs font-label">
 <span class="font-bold text-on-surface flex items-center gap-1">

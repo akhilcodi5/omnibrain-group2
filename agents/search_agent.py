@@ -23,7 +23,7 @@ def search_vector_store_tool(query: str, top_k: int = 5, pdf_name: Optional[str]
     Returns:
         List of matching document chunk dictionaries with text, page_number, pdf_name, and relevance score.
     """
-    vector_store = get_vector_store(in_memory=True)
+    vector_store = get_vector_store(in_memory=False)
     filter_metadata = {"pdf_name": pdf_name} if pdf_name else None
     
     results = vector_store.similarity_search(
@@ -123,7 +123,7 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
         last_msg = state["messages"][-1]
         query = getattr(last_msg, "content", str(last_msg))
 
-    vector_store = state.get("vector_store")
+    vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     logger.info(f"Executing search_agent_node for query: '{query}'")
     agent = SearchAgent(vector_store=vector_store)
     result = agent.execute_search(query=query, top_k=5)
