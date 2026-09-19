@@ -38,3 +38,13 @@ async def test_chat_query_endpoint():
     data = res.json()
     assert "final_response" in data
     assert data["execution_time_seconds"] >= 0.0
+
+
+def test_health_endpoints():
+    """Test /health, /healthz, and /api/v1/health endpoints."""
+    client = TestClient(app)
+    for path in ["/health", "/healthz", "/api/v1/health"]:
+        res = client.get(path)
+        assert res.status_code == 200
+        assert res.json()["status"] == "healthy"
+

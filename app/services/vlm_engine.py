@@ -407,3 +407,8 @@ def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
 
     logger.warning(f"Unknown VLM provider '{provider_str}'. Falling back to OpenAIVisionEngine.")
     return OpenAIVisionEngine()
+
+
+# Alias for backward compatibility
+get_vlm_engine = get_vision_engine
+

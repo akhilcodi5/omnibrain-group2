@@ -7,7 +7,8 @@
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
 [![NeMo Guardrails](https://img.shields.io/badge/Safety-NeMo%20Guardrails-purple.svg)](https://github.com/NVIDIA/NeMo-Guardrails)
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-71%2F71%20Passed-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/Tests-77%2F77%20Passed-brightgreen.svg)]()
+
 [![Benchmark Pass Rate](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
 
 > **OmniBrain** is an enterprise-grade, hallucination-resistant **Agentic Multi-Modal RAG (Retrieval-Augmented Generation)** platform designed for financial and quantitative research over complex enterprise PDFs containing financial statements, balance sheet tables, trend charts, bar graphs, and unstructured textual disclosures.
@@ -464,7 +465,8 @@ python -m streamlit run ui/app.py
 
 ## 🧪 Running Automated Benchmarks & Tests
 
-### Run Full Test Suite (71 Tests)
+### Run Full Test Suite (77 Tests)
+
 ```bash
 python -m pytest tests/ -v
 ```

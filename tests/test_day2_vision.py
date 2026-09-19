@@ -146,3 +146,18 @@ def test_clean_and_parse_json_markdown_fencing():
 
     # 3. Empty input
     assert _clean_and_parse_json("") == {}
+
+
+def test_get_vlm_engine_alias():
+    """Verify get_vlm_engine alias matches get_vision_engine."""
+    from app.services.vlm_engine import get_vision_engine, get_vlm_engine
+    assert get_vlm_engine is get_vision_engine
+
+
+def test_gemini_vision_engine_configuration():
+    """Verify GeminiVisionEngine initializes endpoint and default model properly."""
+    engine = GeminiVisionEngine(api_key="test-gemini-key", model="gemini-flash-latest")
+    assert engine.api_key == "test-gemini-key"
+    assert engine.model == "gemini-flash-latest"
+    assert "generativelanguage.googleapis.com" in engine.base_url
+
