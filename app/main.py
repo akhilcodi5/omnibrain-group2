@@ -46,6 +46,18 @@ async def root():
     }
 
 
+@app.get("/health", include_in_schema=False)
+@app.get("/healthz", include_in_schema=False)
+async def root_health():
+    """Root health check alias for container orchestrators and load balancers."""
+    return {
+        "status": "healthy",
+        "service": "OmniBrain API",
+        "version": "0.1.0",
+    }
+
+
+
 @app.get("/workspace", response_class=FileResponse, tags=["UI"])
 @app.get("/ui", response_class=FileResponse, tags=["UI"])
 async def serve_workspace():

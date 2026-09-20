@@ -11,6 +11,10 @@ from agents.state import AgentState
 from storage.sql_db import FinancialDatabase, get_financial_db
 from app.core.telemetry import get_telemetry_manager
 
+import os
+import time
+from app.core.telemetry import get_telemetry_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -141,3 +145,4 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
         "sql_results": result["sql_results"],
         "next_agent": "Supervisor",
     }
+

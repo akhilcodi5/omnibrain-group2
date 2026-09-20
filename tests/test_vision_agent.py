@@ -59,7 +59,8 @@ def test_prompt_formatting():
 async def test_vision_agent_mock_inference():
     """Test VisionAgent offline mock reasoning when API key is unconfigured."""
     from agents.vision_agent import VisualAnalyticsIntegratorAgent
-    agent = VisualAnalyticsIntegratorAgent()
+    from app.services.vlm_engine import MockVisionEngine
+    agent = VisualAnalyticsIntegratorAgent(vision_service=VisionService(engine=MockVisionEngine()))
     img = Image.new("RGB", (32, 32), color="red")
     
     response = await agent.analyze_visual_asset(

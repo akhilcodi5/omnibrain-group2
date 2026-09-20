@@ -14,8 +14,10 @@ from agents.state import AgentState
 from agents.self_rag import self_rag_node
 from agents.vision_agent import vision_node
 from agents.visual_routing_evaluator import VisualIntentType, VisualRoutingEvaluator
+from app.core.telemetry import get_telemetry_manager
 from app.models.vision_schemas import VisualAnalyticalMemoBlock
 from app.core.telemetry import get_telemetry_manager
+
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +148,7 @@ def route_supervisor_edge(state: AgentState) -> Literal["search_agent", "vision_
     return END
 
 
-def create_supervisor_graph() -> StateGraph:
+def create_supervisor_graph(use_checkpointer: bool = False) -> StateGraph:
     """Build and compile the complete LangGraph Multi-Agent StateGraph."""
     workflow = StateGraph(AgentState)
 
