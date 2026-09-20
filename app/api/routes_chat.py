@@ -23,6 +23,7 @@ class ChatQueryRequest(BaseModel):
     query: str = Field(..., description="The user or quantitative analyst research question.")
     pdf_name: Optional[str] = Field(None, description="Optional target PDF document to focus analysis.")
     referenced_images: List[str] = Field(default_factory=list, description="Optional list of image file paths or base64.")
+    thread_id: Optional[str] = Field(None, description="Thread ID for chat history persistence.")
 
 
 class ChatQueryResponse(BaseModel):
@@ -120,9 +121,22 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
             "iteration_count": 0,
             "final_response": None,
             "citations": [],
+            "trace_id": trace_id,
         }
 
-        final_state = await graph.ainvoke(initial_state)
+        # Initialize LangChain HumanMessage from the query
+        from langchain_core.messages import HumanMessage
+        initial_state["messages"] = [HumanMessage(content=req.query)]
+
+        # Determine thread_id for LangGraph persistent memory
+        import uuid
+        thread_id = req.thread_id if req.thread_id else str(uuid.uuid4())
+        logger.info(f"Executing LangGraph supervisor pipeline for thread: {thread_id}")
+
+        final_state = await graph.ainvoke(
+            initial_state,
+            config={"configurable": {"thread_id": thread_id}}
+        )
 
         # 4. Enforce Output Guardrails (Compliance & Grounding check)
         raw_memo = final_state.get("final_response") or "Analysis completed."
@@ -140,16 +154,7 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
             trace_id=trace_id,
         )
 
-        telemetry.log_agent_step(
-            trace_id=trace_id,
-            agent_name="LangGraphSupervisor",
-            action="SynthesizeMemo",
-            input_data=req.query,
-            output_data=guarded_output[:300],
-            prompt_tokens=450,
-            completion_tokens=320,
-            latency_seconds=elapsed,
-        )
+
 
         trace_summary = telemetry.get_trace_summary(trace_id)
 

@@ -7,6 +7,7 @@ iterative Self-RAG fact-checking, and executive memo formatting for visual figur
 import base64
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
 from PIL import Image
@@ -16,6 +17,7 @@ from agents.cross_modal_verifier import CrossModalVerifier
 from agents.state import AgentState
 from agents.visual_analytics import VisualAnalyticsEngine
 from agents.visual_tools import VisualMemoFormatter
+from app.core.telemetry import get_telemetry_manager
 from app.models.vision_schemas import (
     BoundingBox,
     ChartType,
@@ -177,6 +179,7 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Executing Visual Analytics & Multi-Modal Tool Integrator Node in LangGraph...")
     
+    start_time = time.time()
     vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     agent = VisualAnalyticsIntegratorAgent(vector_store=vector_store)
     query = state.get("query", "")
@@ -253,6 +256,21 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
         valid_scores = [b.verification_report.grounding_score for b in memo_blocks if b.verification_report]
         avg_grounding = sum(valid_scores) / len(valid_scores)
 
+    elapsed = time.time() - start_time
+    trace_id = state.get("trace_id")
+    if trace_id:
+        get_telemetry_manager().log_agent_step(
+            trace_id=trace_id,
+            agent_name="VisionAgent",
+            action="MultiModalAnalysis",
+            model="gemini-1.5-pro",
+            input_data=f"Query: {query}, Images: {referenced_images}",
+            output_data=formatted_sections,
+            prompt_tokens=800 * len(memo_blocks) if memo_blocks else 800,
+            completion_tokens=len(formatted_sections.split()),
+            latency_seconds=elapsed
+        )
+
     return {
         "messages": [ai_message],
         "visual_evidence": current_evidence + [b.model_dump() for b in memo_blocks],
@@ -262,22 +280,4 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     }
 
 
-class VisionAgent(VisualAnalyticsIntegratorAgent):
-    """Subclass/alias for VisionAgent for backward compatibility."""
 
-    async def analyze_visual_asset(
-        self,
-        image_input: Union[str, bytes, Image.Image],
-        query_context: Optional[str] = None,
-        expected_type: Optional[ChartType] = None,
-        crop_box: Optional[BoundingBox] = None,
-        page_number: Optional[int] = None,
-    ) -> VisualAnalyticalMemoBlock:
-        """Alias for analyze_and_verify_figure."""
-        return await self.analyze_and_verify_figure(
-            image_input=image_input,
-            query_context=query_context,
-            expected_type=expected_type,
-            crop_box=crop_box,
-            page_number=page_number,
-        )

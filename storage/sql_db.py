@@ -95,13 +95,70 @@ class FinancialDatabase:
 
     def get_schema_summary(self) -> str:
         """Return the schema definition for Text-to-SQL prompting."""
-        return """
-Table: stocks
-Columns: ticker (TEXT), company_name (TEXT), current_price (REAL), pe_ratio (REAL), market_cap_billions (REAL), fifty_two_week_high (REAL), fifty_two_week_low (REAL)
+        summary = ""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            for table_row in tables:
+                table_name = table_row[0]
+                if table_name == "sqlite_sequence":
+                    continue
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                columns = cursor.fetchall()
+                cols_str = ", ".join([f"{c['name']} ({c['type']})" for c in columns])
+                summary += f"Table: {table_name}\nColumns: {cols_str}\n\n"
+        return summary.strip()
 
-Table: quarterly_financials
-Columns: id (INTEGER), ticker (TEXT), fiscal_quarter (TEXT), revenue_millions (REAL), operating_margin_pct (REAL), net_income_millions (REAL), eps (REAL)
-"""
+    def ingest_pdf_tables(self, pdf_name: str, tables_by_page: List[List[List[Optional[str]]]]):
+        """Dynamically ingest extracted 2D PDF tables into SQLite."""
+        import re
+        clean_pdf_name = re.sub(r'[^a-zA-Z0-9_]', '_', os.path.splitext(os.path.basename(pdf_name))[0]).lower()
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            for page_idx, tables in enumerate(tables_by_page):
+                for tbl_idx, table in enumerate(tables):
+                    if not table or len(table) < 2:
+                        continue
+                        
+                    # Clean headers
+                    raw_headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(table[0])]
+                    headers = []
+                    for h in raw_headers:
+                        clean_h = re.sub(r'[^a-zA-Z0-9_]', '_', h).lower()
+                        clean_h = re.sub(r'^_+|_+$', '', clean_h)
+                        if not clean_h or clean_h[0].isdigit():
+                            clean_h = f"col_{clean_h}"
+                        headers.append(clean_h)
+                        
+                    # Ensure unique headers
+                    seen = {}
+                    unique_headers = []
+                    for h in headers:
+                        if h in seen:
+                            seen[h] += 1
+                            unique_headers.append(f"{h}_{seen[h]}")
+                        else:
+                            seen[h] = 0
+                            unique_headers.append(h)
+                    
+                    table_name = f"tbl_{clean_pdf_name}_p{page_idx+1}_{tbl_idx+1}"
+                    
+                    # Create table
+                    cols_def = ", ".join([f"{h} TEXT" for h in unique_headers])
+                    cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({cols_def})")
+                    
+                    # Insert rows
+                    insert_sql = f"INSERT INTO {table_name} VALUES ({','.join(['?']*len(unique_headers))})"
+                    for row in table[1:]:
+                        # Pad row if shorter than headers
+                        padded_row = [str(cell) if cell is not None else "" for cell in row]
+                        while len(padded_row) < len(unique_headers):
+                            padded_row.append("")
+                        padded_row = padded_row[:len(unique_headers)]
+                        cursor.execute(insert_sql, padded_row)
+            conn.commit()
 
     def execute_query(self, sql_query: str) -> List[Dict[str, Any]]:
         """Execute a read-only SQL query and return results as dictionaries."""

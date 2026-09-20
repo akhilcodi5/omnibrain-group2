@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes_chat import router as chat_router
 from app.api.routes_health import router as health_router
@@ -61,8 +62,6 @@ async def serve_workspace():
 # Mount built frontend static assets if available
 frontend_dist_assets = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist", "assets")
 if os.path.exists(frontend_dist_assets):
-    from fastapi.staticfiles import StaticFiles
-
     app.mount("/assets", StaticFiles(directory=frontend_dist_assets), name="assets")
 
 # Mount extracted images for frontend artifact viewing

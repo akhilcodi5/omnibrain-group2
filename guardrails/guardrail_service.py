@@ -46,19 +46,7 @@ class GuardrailService:
 
     def __init__(self, config_dir: Optional[str] = None):
         self.config_dir = config_dir or os.path.join(os.getcwd(), "guardrails")
-        self._rails_app = None
-        self._init_nemo_rails()
-
-    def _init_nemo_rails(self):
-        """Attempt to load native NeMo Guardrails if environment and dependencies permit."""
-        try:
-            from nemoguardrails import RailsConfig, LLMRails
-            if os.path.exists(self.config_dir):
-                config = RailsConfig.from_path(self.config_dir)
-                self._rails_app = LLMRails(config)
-                logger.info("NeMo Guardrails engine initialized successfully.")
-        except Exception as e:
-            logger.info(f"NeMo Guardrails native runtime unconfigured ({e}). Operating in deterministic policy mode.")
+        logger.info("Operating in deterministic guardrail policy mode.")
 
     def check_input_query(self, query: str) -> GuardrailCheckResult:
         """Validate incoming user queries against topical boundaries and jailbreak attempts."""

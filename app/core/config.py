@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # LLM & Embedding Settings
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o"
+    GEMINI_API_KEY: Optional[str] = None
+    LLM_PROVIDER: str = "gemini"
+    VLM_PROVIDER: str = "gemini"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     
     # Qdrant Vector Database

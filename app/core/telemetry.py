@@ -37,12 +37,7 @@ class TelemetryManager:
                     secret_key=self.secret_key,
                     host=self.host,
                 )
-                if not hasattr(self._langfuse_client, "trace"):
-                    logger.warning("Installed Langfuse SDK (v4+) is incompatible with legacy v3 telemetry logic. Disabling external tracing.")
-                    self.is_enabled = False
-                    self._langfuse_client = None
-                else:
-                    logger.info("Langfuse telemetry client initialized successfully.")
+                logger.info("Langfuse telemetry client initialized successfully.")
             except Exception as e:
                 logger.warning(f"Failed to initialize Langfuse SDK ({e}). Falling back to in-memory tracing.")
                 self.is_enabled = False
@@ -78,6 +73,7 @@ class TelemetryManager:
                     user_id=user_id,
                     metadata=metadata,
                 )
+                logger.info(f"Telemetry sent to Langfuse: Trace '{name}' initialized with id={trace_id}")
             except Exception as e:
                 logger.error(f"Langfuse trace creation error: {e}")
 
@@ -126,6 +122,7 @@ class TelemetryManager:
                         "total_tokens": prompt_tokens + completion_tokens,
                     },
                 )
+                logger.info(f"Telemetry sent to Langfuse: Generation logged for agent={agent_name} action={action} (trace_id={trace_id})")
             except Exception as e:
                 logger.error(f"Langfuse generation logging error: {e}")
 
@@ -155,6 +152,7 @@ class TelemetryManager:
                     value=score,
                     comment=comment,
                 )
+                logger.info(f"Telemetry sent to Langfuse: Score logged metric={metric_name} value={score} (trace_id={trace_id})")
             except Exception as e:
                 logger.error(f"Langfuse score logging error: {e}")
 
