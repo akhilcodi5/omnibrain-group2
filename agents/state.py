@@ -14,6 +14,7 @@ class AgentState(TypedDict):
     # Original user query and routing decisions
     query: str
     next_agent: Optional[str]
+    trace_id: Optional[str]
     
     # Retrieval and context payloads
     retrieved_docs: List[Dict[str, Any]]

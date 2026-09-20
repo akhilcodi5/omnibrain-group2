@@ -101,55 +101,17 @@ export function jumpToPage(val) {
   showToast(`Navigated to PDF Page ${pageNum} • OCR context active`);
 }
 
-// Toggle Memo Fullscreen
-export function toggleMemoFullscreen() {
-  const aside = document.getElementById('memo-aside');
-  const icon = document.getElementById('memo-fullscreen-icon');
-  if (!aside || !icon) return;
-  if (aside.classList.contains('w-96')) {
-    aside.classList.remove('w-96');
-    aside.classList.add('w-full', 'fixed', 'inset-0', 'z-50');
-    icon.textContent = 'close_fullscreen';
-  } else {
-    aside.classList.remove('w-full', 'fixed', 'inset-0', 'z-50');
-    aside.classList.add('w-96');
-    icon.textContent = 'open_in_full';
-  }
-}
-
 // Copy Markdown Memo
-export function copyMarkdownMemo() {
+export function copyMarkdownMemo(btn) {
+  const text = decodeURIComponent(btn.getAttribute('data-markdown') || '');
   navigator.clipboard
-    .writeText(latestMemoMarkdown)
+    .writeText(text)
     .then(() => {
       showToast('Markdown copied to clipboard! 📋');
     })
     .catch(() => {
-      showToast('Copied memo draft');
+      showToast('Failed to copy');
     });
-}
-
-// Export PDF
-export function exportMemoPDF() {
-  showToast('Preparing print-ready investment memo...');
-  setTimeout(() => {
-    window.print();
-  }, 300);
-}
-
-// Dispatch to Committee
-export function dispatchToCommittee() {
-  showToast('Dispatching signed memo to Investment Committee (Slack webhook sent) 🚀');
-}
-
-// Share Workspace
-export function shareWorkspace() {
-  if (navigator.share) {
-    navigator.share({ title: 'OmniBrain Workspace', url: window.location.href });
-  } else {
-    navigator.clipboard.writeText(window.location.href);
-    showToast('Workspace share link copied! 🔗');
-  }
 }
 
 // Artifact Modal
@@ -191,6 +153,14 @@ export async function handleFileUpload(event) {
   document.getElementById('corpus-tab-strip')?.classList.remove('hidden');
   document.getElementById('artifact-list-container')?.classList.remove('hidden');
   
+  const ocrContainer = document.getElementById('ocr-status-container');
+  if (ocrContainer) {
+    ocrContainer.classList.remove('hidden');
+    ocrContainer.classList.add('flex');
+    document.getElementById('ocr-status').textContent = 'OCR Pending';
+    document.getElementById('ocr-status-icon').textContent = 'pending';
+  }
+  
   const activeName = document.getElementById('active-doc-name');
   const activeBadge = document.getElementById('active-doc-badge');
   if (activeName) activeName.textContent = file.name;
@@ -212,6 +182,13 @@ export async function handleFileUpload(event) {
         activeBadge.className =
           'text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide';
       }
+      
+      const ocrStatus = document.getElementById('ocr-status');
+      if (ocrStatus) {
+        ocrStatus.textContent = 'OCR Completed';
+        document.getElementById('ocr-status-icon').textContent = 'check_circle';
+      }
+
       document.getElementById('active-doc-pages').textContent = `(${data.total_pages || 1} pgs)`;
       document.getElementById('doc-card-title').textContent = file.name;
       document.getElementById('doc-card-pgcount').textContent = `${data.total_pages || 1} Pgs`;
@@ -274,6 +251,8 @@ export async function handleFileUpload(event) {
   }
 }
 
+const sessionId = crypto.randomUUID();
+
 // Main Analyst Query Execution (Connects to /api/v1/chat/query)
 export async function executeAnalystQuery() {
   const input = document.getElementById('query-input');
@@ -285,10 +264,10 @@ export async function executeAnalystQuery() {
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
   // Dynamically inject User Bubble
-  const traceContainer = document.getElementById('trace-container');
+  const traceContainer = document.getElementById('chat-stream');
   if (traceContainer) {
     const userBubble = `
-      <div class="flex items-start gap-3 justify-end">
+      <div class="max-w-3xl mx-auto w-full flex items-start gap-3 justify-end mt-4">
         <div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm px-4 py-3 max-w-xl shadow-xs">
           <p class="text-sm font-medium leading-relaxed">${query}</p>
           <div class="mt-1 flex items-center justify-end gap-1.5 text-[10px] text-on-primary/80">
@@ -299,24 +278,18 @@ export async function executeAnalystQuery() {
       </div>
     `;
     const traceLoading = `
-      <div id="active-trace-card" class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden animate-pulse">
-        <div class="p-3.5 bg-surface-container-low flex items-center justify-between border-b border-surface-container">
-          <div class="flex items-center gap-2.5">
-            <div class="w-6 h-6 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center">
-              <span class="material-symbols-outlined text-sm">sync</span>
-            </div>
-            <div>
-              <h4 class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-                <span>LangGraph Supervisor Orchestration</span>
-                <span class="text-[10px] bg-amber-100 text-amber-800 font-label font-bold px-1.5 py-0.2 rounded" id="trace-badge">Swarm Executing...</span>
-              </h4>
-              <p class="text-[11px] text-secondary">Routing query across Vision, Search & SQL agents...</p>
-            </div>
-          </div>
+      <div id="active-trace-card" class="max-w-3xl mx-auto w-full flex items-start gap-3 mt-4 animate-pulse">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-white font-bold text-xs shrink-0 ring-2 ring-primary/20">OB</div>
+        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl rounded-tl-sm px-4 py-3 shadow-xs">
+          <p class="text-xs font-semibold text-secondary flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">sync</span>
+            <span>Agentic Swarm processing...</span>
+          </p>
         </div>
       </div>
     `;
-    traceContainer.innerHTML = userBubble + traceLoading;
+    traceContainer.insertAdjacentHTML('beforeend', userBubble + traceLoading);
+    traceContainer.scrollTop = traceContainer.scrollHeight;
   }
   
   const execBtn = document.getElementById('execute-btn');
@@ -326,7 +299,7 @@ export async function executeAnalystQuery() {
       '<span class="animate-spin text-sm material-symbols-outlined">sync</span><span>Running</span>';
   }
 
-  showToast('Swarm Active: Routing query across Vision, Search & SQL agents...', 5000);
+  showToast('Swarm Active: Routing query across agents...', 5000);
 
   const startTime = performance.now();
 
@@ -334,7 +307,11 @@ export async function executeAnalystQuery() {
     const response = await fetch('/api/v1/chat/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query, referenced_images: currentUploadedImages }),
+      body: JSON.stringify({ 
+        query: query, 
+        referenced_images: currentUploadedImages,
+        thread_id: sessionId
+      }),
     });
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
@@ -342,62 +319,52 @@ export async function executeAnalystQuery() {
     if (response.ok) {
       const result = await response.json();
 
-      const traceBadge = document.getElementById('trace-badge');
-      if (traceBadge) {
-        traceBadge.textContent = `Converged in ${
-          result.execution_time_seconds ? result.execution_time_seconds.toFixed(2) : elapsed
-        }s`;
-        traceBadge.className =
-          'text-[10px] bg-emerald-100 text-emerald-800 font-label font-bold px-1.5 py-0.2 rounded';
-        
-        // Remove loading state from trace card
-        document.getElementById('active-trace-card')?.classList.remove('animate-pulse');
-        const iconContainer = document.getElementById('active-trace-card')?.querySelector('.bg-amber-100');
-        if (iconContainer) {
-            iconContainer.className = 'w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 flex items-center justify-center';
-            iconContainer.innerHTML = '<span class="material-symbols-outlined text-sm">hub</span>';
-        }
-      }
+      const activeTraceCard = document.getElementById('active-trace-card');
+      if (activeTraceCard) activeTraceCard.remove();
 
-      document.getElementById('memo-title').textContent = `Synthesis: ${query.slice(0, 60)}${
-        query.length > 60 ? '...' : ''
-      }`;
-      if (result.final_response) {
-        latestMemoMarkdown = result.final_response;
-        document.getElementById('dynamic-memo-content').innerHTML = marked.parse(result.final_response);
-      }
+      const score = result.is_grounded ? 100 : 0;
+      const statElem = document.getElementById('faithfulness-stat');
+      if (statElem) statElem.textContent = `${score}%`;
 
-      const citationsCount = result.citations ? result.citations.length : 0;
-      const totalSources = document.querySelectorAll('.artifact-card').length || 1;
-      const boundingScore = citationsCount > 0 ? 100.0 : 0.0;
-      const groundingStatElem = document.getElementById('citation-grounding-stat');
-      if (groundingStatElem) {
-        groundingStatElem.textContent = `${boundingScore.toFixed(1)}% (${citationsCount}/${totalSources} Bounding)`;
-      }
-
-      let h = 0;
-      if (result.evaluation_summary && result.evaluation_summary.faithfulness_score) {
-        h = (result.evaluation_summary.faithfulness_score * 100).toFixed(2);
-      } else {
-        h = result.is_grounded ? (98 + Math.random() * 1.5).toFixed(2) : (75 + Math.random() * 10).toFixed(2);
-      }
+      // Create AI bubble
+      const aiBubble = `
+        <div class="max-w-3xl mx-auto w-full flex items-start gap-3 mt-4">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-white font-bold text-xs shrink-0 ring-2 ring-primary/20">OB</div>
+          <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl rounded-tl-sm px-5 py-4 w-full shadow-xs">
+            <div class="prose prose-sm prose-slate max-w-none font-headline overflow-hidden">
+              ${marked.parse(result.final_response || "No response generated.")}
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-surface-container flex items-center justify-between">
+              <div class="flex items-center gap-3 text-[11px]">
+                <span class="flex items-center gap-1.5 ${result.is_grounded ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'} px-2 py-1 rounded-md border ${result.is_grounded ? 'border-emerald-200' : 'border-amber-200'} font-semibold">
+                  <span class="material-symbols-outlined text-[14px]">${result.is_grounded ? 'verified_user' : 'warning'}</span>
+                  ${result.is_grounded ? '100% Grounded' : 'Unverified'}
+                </span>
+                <span class="text-secondary font-mono">Citations: ${result.citations ? result.citations.length : 0}</span>
+                <span class="text-secondary font-mono">${result.execution_time_seconds ? result.execution_time_seconds.toFixed(2) : elapsed}s</span>
+              </div>
+              
+              <button onclick="copyMarkdownMemo(this)" data-markdown="${encodeURIComponent(result.final_response)}" class="px-2.5 py-1.5 rounded bg-surface-container hover:bg-surface-container-high font-body text-xs font-semibold text-secondary flex items-center gap-1.5 transition-colors">
+                <span class="material-symbols-outlined text-sm">content_copy</span>
+                <span>Copy</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
       
-      // Show top status badge when query executes
-      document.getElementById('top-status-badge')?.classList.remove('hidden');
-      document.getElementById('faithfulness-stat').textContent = `${h}%`;
-      const faithfulnessElem = document.getElementById('faithfulness-score');
-      if (faithfulnessElem) faithfulnessElem.textContent = `${h} / 100`;
-      
-      // Unhide grounding proof
-      document.getElementById('grounding-proof-container')?.classList.remove('hidden');
-
-      showToast(`✅ Swarm converged in ${elapsed}s with 100% verified citations`);
+      if (traceContainer) {
+        traceContainer.insertAdjacentHTML('beforeend', aiBubble);
+        traceContainer.scrollTop = traceContainer.scrollHeight;
+      }
+      showToast(`✅ Swarm converged in ${elapsed}s`);
     } else {
-      simulateSwarmConvergence(query, elapsed);
+      showChatError(query, elapsed, "API returned an error response.");
     }
   } catch (e) {
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-    simulateSwarmConvergence(query, elapsed);
+    showChatError(query, elapsed, e.message);
   } finally {
     if (execBtn) {
       execBtn.disabled = false;
@@ -407,21 +374,25 @@ export async function executeAnalystQuery() {
   }
 }
 
-function simulateSwarmConvergence(query, elapsed) {
-  const traceBadge = document.getElementById('trace-badge');
-  if (traceBadge) {
-    traceBadge.textContent = `Converged in ${elapsed}s`;
-    traceBadge.className =
-      'text-[10px] bg-emerald-100 text-emerald-800 font-label font-bold px-1.5 py-0.2 rounded';
+function showChatError(query, elapsed, errorMessage) {
+  const activeTraceCard = document.getElementById('active-trace-card');
+  if (activeTraceCard) activeTraceCard.remove();
+  
+  const traceContainer = document.getElementById('chat-stream');
+  if (traceContainer) {
+    const errorBubble = `
+      <div class="max-w-3xl mx-auto w-full flex items-start gap-3 mt-4">
+        <div class="w-8 h-8 rounded-full bg-error text-on-error flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-error/20">!</div>
+        <div class="bg-error-container text-on-error-container border border-error/20 rounded-2xl rounded-tl-sm px-4 py-3 w-full shadow-xs">
+          <p class="text-sm font-semibold mb-1">Failed to process query</p>
+          <p class="text-xs opacity-90">${errorMessage}</p>
+        </div>
+      </div>
+    `;
+    traceContainer.insertAdjacentHTML('beforeend', errorBubble);
+    traceContainer.scrollTop = traceContainer.scrollHeight;
   }
-
-  document.getElementById('memo-title').textContent = `Synthesis: ${query.slice(0, 50)}...`;
-  const meta = document.getElementById('memo-meta');
-  if (meta) {
-    meta.textContent = `Generated ${new Date().toLocaleDateString()} • OmniBrain Quant Swarm v2.4`;
-  }
-
-  showToast(`Swarm converged in ${elapsed}s • NeMo guardrail verified`);
+  showToast(`❌ Swarm failed in ${elapsed}s`);
 }
 
 // Bind all functions to window for direct HTML inline event handlers
@@ -432,11 +403,7 @@ window.toggleSwarmFilter = toggleSwarmFilter;
 window.filterCorpus = filterCorpus;
 window.switchCorpusTab = switchCorpusTab;
 window.jumpToPage = jumpToPage;
-window.toggleMemoFullscreen = toggleMemoFullscreen;
 window.copyMarkdownMemo = copyMarkdownMemo;
-window.exportMemoPDF = exportMemoPDF;
-window.dispatchToCommittee = dispatchToCommittee;
-window.shareWorkspace = shareWorkspace;
 window.previewArtifact = previewArtifact;
 window.closeArtifactModal = closeArtifactModal;
 window.showGraphDAGModal = showGraphDAGModal;

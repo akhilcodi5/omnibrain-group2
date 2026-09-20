@@ -39,6 +39,7 @@ class VisualRoutingEvaluator:
     VISUAL_KEYWORDS = [
         "chart", "graph", "plot", "figure", "table", "bar chart", "line chart",
         "pie chart", "diagram", "exhibit", "breakdown", "trend", "visual", "axis",
+        "financial statements", "statement of operations", "balance sheet", "cash flows"
     ]
 
     VERIFICATION_KEYWORDS = [

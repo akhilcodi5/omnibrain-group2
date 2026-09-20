@@ -3,9 +3,9 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red.svg)](https://streamlit.io/)
+[![Vite](https://img.shields.io/badge/Frontend-Vite-blue.svg)](https://vitejs.dev/)
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
-[![NeMo Guardrails](https://img.shields.io/badge/Safety-NeMo%20Guardrails-purple.svg)](https://github.com/NVIDIA/NeMo-Guardrails)
+[![Guardrails](https://img.shields.io/badge/Safety-Deterministic%20Guardrails-purple.svg)]()
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
 [![Tests Passing](https://img.shields.io/badge/Tests-77%2F77%20Passed-brightgreen.svg)]()
 
@@ -25,7 +25,6 @@
 - [System Architecture](#-system-architecture)
 - [LangGraph Multi-Agent State Graph](#-langgraph-multi-agent-state-graph)
 - [API Reference (FastAPI Backend)](#-api-reference-fastapi-backend)
-- [Interactive Streamlit UI Dashboard](#-interactive-streamlit-ui-dashboard)
 - [Evaluation, Observability & Guardrails](#-evaluation-observability--guardrails)
 - [Repository Structure](#-repository-structure)
 - [Quickstart Guide](#-quickstart-guide)
@@ -44,9 +43,9 @@ Standard Retrieval-Augmented Generation (RAG) pipelines fail when applied to com
 **OmniBrain** solves this with an agentic architecture:
 - **Supervisor Agent (LangGraph)**: Dynamically decomposes multi-hop research queries and routes sub-tasks across specialized agents.
 - **Multi-Modal Vision Specialist (GPT-4o / LLaVA)**: Extracts structured data from visual figures and tables, runs quantitative trend calculations (CAGR, YoY growth), and cross-references visual metrics against text context.
-- **Semantic RAG & Search Agent (Qdrant + Self-RAG)**: Retrieves vector chunks and autonomously rewrites queries if retrieved context is insufficient.
-- **Text-to-SQL Agent**: Queries structured relational databases for market benchmarks, valuations, and trading multiples.
-- **Hallucination Guardrails & Telemetry (NeMo + Langfuse)**: Enforces domain boundaries, prevents prompt leakage, and traces latency, token usage, and faithfulness.
+- **Semantic RAG & Search Agent (Qdrant + Self-RAG)**: Retrieves vector chunks and autonomously loops to rewrite queries if retrieved context is insufficient.
+- **Text-to-SQL Agent (Gemini 1.5 Pro)**: Queries structured relational databases for market benchmarks, valuations, and trading multiples.
+- **Hallucination Guardrails & Telemetry (Langfuse)**: Enforces domain boundaries, prevents prompt leakage, and traces latency, token usage, and faithfulness down to the individual sub-agent level.
 
 ---
 
@@ -110,8 +109,8 @@ The project is structured into specialized engineering pods:
 
 ### 🛡️ The Data, Safety & Full-Stack Pod
 - **Role 4: Multi-Modal Data Engineer** — Document ingestion, PyMuPDF parsing, text chunking, and multi-modal vector indexing in Qdrant.
-- **Role 5: AI Safety & Observability Lead** — NVIDIA NeMo Guardrails configuration, input/output rail enforcement, and Langfuse tracing.
-- **Role 6: Full-Stack Integration Engineer** — FastAPI asynchronous backend services, Streamlit dashboard, thought trace visualization, and visual citation overlay rendering.
+- **Role 5: AI Safety & Observability Lead** — Deterministic input/output rail enforcement, LLM evaluations, and distributed Langfuse tracing.
+- **Role 6: Full-Stack Integration Engineer** — FastAPI asynchronous backend services, modern Vite web frontend, and visual citation rendering.
 
 ---
 
@@ -176,17 +175,16 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    User([Analyst Query / PDF Upload]) --> UI[Streamlit Frontend]
-    UI -->|Async REST API| API[FastAPI Backend]
+    User([Analyst Query / PDF Upload]) --> UI[Vite Web Frontend]
+    UI --> API[FastAPI Backend]
     
     subgraph Guardrails & Observability
-        API --> NeMo[NeMo Guardrails: Input & Output Checks]
+        API --> Guardrails[Deterministic Guardrails: Input & Output Checks]
+        Guardrails --> Supervisor[Supervisor Agent]
         API -.-> Langfuse[Langfuse: Traces, Latency & Token Usage]
     end
 
     subgraph Agentic Orchestrator [LangGraph State Machine]
-        NeMo --> Supervisor[Supervisor Agent]
-        
         Supervisor -->|Visual / Chart Query| VisionAgent[Multi-Modal Vision Specialist]
         Supervisor -->|Unstructured Text Query| SearchAgent[Search Agent + Self-RAG]
         Supervisor -->|Structured Stock Query| SQLAgent[Text-to-SQL Agent]
@@ -262,7 +260,7 @@ The FastAPI server (`app/main.py`) exposes modular endpoints for document ingest
 ### 2. Chat & Multi-Agent Orchestration (`/api/v1/chat`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `POST` | `/api/v1/chat/query` | End-to-end multi-agent query execution across Vision, Search, and SQL with NeMo guardrails and Langfuse tracing. |
+| `POST` | `/api/v1/chat/query` | End-to-end multi-agent query execution across Vision, Search, and SQL with deterministic guardrails and distributed Langfuse tracing. |
 | `POST` | `/api/v1/chat/memo` | Synthesizes an executive-grade investment research memorandum. |
 
 ### 3. Ingestion & System Health
@@ -276,44 +274,26 @@ The FastAPI server (`app/main.py`) exposes modular endpoints for document ingest
 
 ## 🖥️ User Interfaces & Quantitative Workspaces
 
-OmniBrain features a state-of-the-art **npm-based modern web frontend** alongside the legacy Streamlit explorer:
+OmniBrain features a state-of-the-art **npm-based modern web frontend**:
 
-### 1. ⚡ OmniBrain Modern Web Application (npm + Vite)
+### 1. 🖥️ Modern Workspace (Vite + JS + CSS)
 Located in [`frontend/`](file:///d:/omnibrain/frontend/) with Vite HMR and reverse proxying to FastAPI:
 - **Run dev server**: `npm run dev` (starts on `http://localhost:5173`)
 - **Build production bundle**: `npm run build`
-- **Panel 1: Document Ingest & Corpus Explorer**: Real-time PDF ingestion, OCR status grounding, and high-salience extracted chart/table artifacts with interactive page jumping.
-- **Panel 2: Swarm Orchestrator & Conversation Stream**: Real-time multi-agent routing filters (Vision Agent, DuckDB SQL, NeMo Guardrail, Supervisor DAG), interactive query execution, collapsible supervisor thought traces, and LangGraph DAG visualization.
-- **Panel 3: Live Verified Investment Memo**: Editorial scholarly investment research memo with inline PDF page citations, audit grounding proofs (faithfulness index: 99.82%), copy markdown, and one-click PDF export.
+- **Panel 1: Corpus & Multimodal Ingest**: Live status of OCR and vectorization for 10-K PDFs. Upload financial disclosures here.
+- **Panel 2: Swarm Orchestrator & Conversation Stream**: Real-time multi-agent routing filters, interactive query execution, and chat history retention via LangGraph `MemorySaver`.
+- **Panel 3: High-Salience Artifacts**: Dedicated extraction viewer rendering isolated charts and tables directly from the pipeline for verification.
 
 ### 2. 🏛️ Built-in FastAPI Workspace Serving (`/workspace`)
 The compiled frontend is also served natively by FastAPI at `http://localhost:8000/workspace`.
-
-### 3. 📊 Legacy Streamlit Dashboard (`ui/app.py`)
-Run via `python -m streamlit run ui/app.py` on `http://localhost:8501`.
-
-1. **💬 Multi-Agent Research Chat**:
-   - Natural language query input with optional visual image attachments.
-   - Live collapsible **Agent Thought Trace** rendering step-by-step reasoning and tool calls.
-   - Rendered **Investment Memo** with embedded visual trend tables and verification badges.
-2. **📊 Visual Analytics & Exhibits**:
-   - Interactive KPI metric cards (CAGR, Trajectory direction, YoY changes).
-   - Side-by-side display of visual figures and corroborating text claims.
-   - Discrepancy warning callouts with severity ratings (`LOW`, `MEDIUM`, `HIGH`).
-3. **🔍 Citations & Evidence Gallery**:
-   - Clickable citation cards with page numbers and relevance confidence scores.
-   - Popover drill-down displaying **bounding-box highlighted PDF pages**.
-4. **📈 Benchmark & Accuracy Suite**:
-   - Live execution of automated multimodal benchmark tests.
-   - Pass rate percentage, latency metrics, and failure diagnostics.
 
 ---
 
 ## 🛡️ Evaluation, Observability & Guardrails
 
-- **NVIDIA NeMo Guardrails** ([`guardrails/guardrail_service.py`](file:///d:/omnibrain/guardrails/guardrail_service.py)):
-  - Input Rail: Blocks off-topic queries and prompt injection attempts.
-  - Output Rail: Enforces regulatory disclaimers and checks grounding scores before rendering outputs.
+- **Deterministic Guardrails** ([`guardrails/guardrail_service.py`](file:///d:/omnibrain/guardrails/guardrail_service.py)):
+  - **Input filtering**: Scans analyst queries for prohibited terminology (PII, off-topic domains).
+  - **Output grounding**: Rewrites final answers dynamically, enforcing disclaimers and refusing ungrounded requests.
 - **Langfuse Telemetry** ([`app/core/telemetry.py`](file:///d:/omnibrain/app/core/telemetry.py)):
   - Records end-to-end traces, agent execution paths, prompt/completion token usage, and latencies.
 - **Multi-Modal RAG Evaluator** ([`eval/evaluator.py`](file:///d:/omnibrain/eval/evaluator.py)):
@@ -368,20 +348,13 @@ omnibrain/
 │   ├── sql_db.py                     # SQLite financial database connection and schema
 │   └── image_store.py                # Visual figure persistence and thumbnail cache
 ├── guardrails/
-│   ├── guardrail_service.py          # NeMo Guardrails policy service
+│   ├── guardrail_service.py          # Deterministic Guardrails policy service
 │   ├── config.yml                    # Guardrails configuration
 │   └── rails/                        # Colang security flow definitions
 ├── eval/
 │   ├── evaluator.py                  # Multi-modal RAG faithfulness & grounding evaluator
 │   └── benchmark_runner.py           # Automated standalone benchmark suite
-├── ui/
-│   ├── app.py                        # Streamlit interactive analyst dashboard
-│   ├── components/
-│   │   ├── visual_analytics_view.py  # Visual KPI cards and discrepancy viewer
-│   │   ├── citation_viewer.py        # Visual citation cards and popover overlay drill-down
-│   │   └── thought_trace.py          # Step-by-step agent reasoning trace
-│   └── styles.css                    # Custom CSS styling
-├── tests/                            # 20 test modules (70 passed unit & integration tests)
+├── tests/                            # Pytest Benchmark & Integration Suite
 ├── requirements.txt                  # Python project dependencies
 ├── .env.example                      # Environment variables template
 └── README.md                         # Project documentation
@@ -455,11 +428,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - *Quant Workspace (3-Panel UI): `http://localhost:8000/workspace`*
 - *Interactive API docs: `http://localhost:8000/docs`*
 
-**Start the Streamlit Visual Dashboard** *(optional)*:
-```bash
-python -m streamlit run ui/app.py
-```
-- *Access Streamlit dashboard at: `http://localhost:8501`*
+
 
 ---
 

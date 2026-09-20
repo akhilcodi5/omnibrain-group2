@@ -12,6 +12,43 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+class GeminiRESTLLM:
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash-lite"):
+        self.api_key = api_key
+        self.model = model
+        self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+
+    def invoke(self, prompt: str):
+        import httpx
+        import time
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.0, "maxOutputTokens": 2048}
+        }
+        
+        # Pacing for 15 RPM limit
+        time.sleep(4)
+        
+        with httpx.Client(timeout=60.0) as client:
+            try:
+                res = client.post(f"{self.base_url}?key={self.api_key}", json=payload)
+                res.raise_for_status()
+                data = res.json()
+                content = ""
+                if "candidates" in data and len(data["candidates"]) > 0:
+                    parts = data["candidates"][0].get("content", {}).get("parts", [])
+                    if parts:
+                        content = parts[0].get("text", "")
+                
+                class MockResponse:
+                    def __init__(self, text):
+                        self.content = text
+                return MockResponse(content)
+            except Exception as e:
+                logger.error(f"Gemini REST LLM failed: {e}")
+                raise
+
+
 class SelfRAGEngine:
     """Self-Corrective RAG engine providing relevance evaluation, query rewriting, and grounding audits."""
 
@@ -20,15 +57,21 @@ class SelfRAGEngine:
         self._llm = llm
 
     def _get_llm(self):
-        if self._llm is None and settings.OPENAI_API_KEY:
-            try:
-                self._llm = ChatOpenAI(
-                    model=settings.OPENAI_MODEL,
-                    temperature=0.0,
-                    api_key=settings.OPENAI_API_KEY,
-                )
-            except Exception as e:
-                logger.warning(f"Could not initialize ChatOpenAI ({e}). Using rule-based fallback.")
+        if self._llm is None:
+            provider = getattr(settings, "LLM_PROVIDER", "openai").lower()
+            gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+            
+            if provider == "gemini" and gemini_key:
+                self._llm = GeminiRESTLLM(api_key=gemini_key)
+            elif settings.OPENAI_API_KEY:
+                try:
+                    self._llm = ChatOpenAI(
+                        model=settings.OPENAI_MODEL,
+                        temperature=0.0,
+                        api_key=settings.OPENAI_API_KEY,
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not initialize ChatOpenAI ({e}). Using rule-based fallback.")
         return self._llm
 
     def grade_retrieval_relevance(

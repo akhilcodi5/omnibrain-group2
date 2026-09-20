@@ -98,15 +98,8 @@ class VectorStore:
                 remote_client.get_collections()
                 self.client = remote_client
             except Exception as e:
-                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to local storage.")
-                try:
-                    import os
-                    os.makedirs("storage/qdrant_data", exist_ok=True)
-                    self.client = QdrantClient(path="storage/qdrant_data")
-                    self.client.get_collections()
-                except Exception as disk_e:
-                    logger.warning(f"Could not initialize disk Qdrant ({disk_e}). Falling back to in-memory mode.")
-                    self.client = QdrantClient(location=":memory:")
+                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to persistent disk mode.")
+                self.client = QdrantClient(path="storage/qdrant_data")
 
         self.ensure_collection_exists()
 

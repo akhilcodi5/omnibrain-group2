@@ -92,7 +92,7 @@ class MemoSynthesizer:
                     lines.append(f"| {block.figure_title} - {cr.metric_name} | `{v_val}` | {t_val} | `{status_badge}` | {cr.explanation} |")
 
         if not has_cross_refs:
-            lines.append("| Consolidated Revenue | Verified | Verified in Text | `🟢 VERIFIED` | Exact alignment confirmed across visual charts and text body. |")
+            lines.append("| N/A | N/A | N/A | `⚪ NOT REQUIRED` | No specific cross-modal verifications were identified for this query. |")
         lines.append("")
 
         # 5. Risk Factors & Flagged Anomaly Alerts

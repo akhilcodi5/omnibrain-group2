@@ -2,11 +2,13 @@
 
 import logging
 from typing import Any, Dict, List, Optional
+import time
 from langchain_core.messages import AIMessage
 from langchain_core.tools import tool
 
 from agents.state import AgentState
-from storage.vector_store import get_vector_store, VectorStore
+from storage.vector_store import VectorStore, get_vector_store
+from app.core.telemetry import get_telemetry_manager
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,7 @@ def search_vector_store_tool(query: str, top_k: int = 5, pdf_name: Optional[str]
     Returns:
         List of matching document chunk dictionaries with text, page_number, pdf_name, and relevance score.
     """
-    vector_store = get_vector_store(in_memory=True)
+    vector_store = get_vector_store(in_memory=False)
     filter_metadata = {"pdf_name": pdf_name} if pdf_name else None
     
     results = vector_store.similarity_search(
@@ -123,12 +125,30 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
         last_msg = state["messages"][-1]
         query = getattr(last_msg, "content", str(last_msg))
 
-    vector_store = state.get("vector_store")
+    vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
+    trace_id = state.get("trace_id")
     logger.info(f"Executing search_agent_node for query: '{query}'")
+    
+    start_time = time.time()
     agent = SearchAgent(vector_store=vector_store)
     result = agent.execute_search(query=query, top_k=5)
+    elapsed = time.time() - start_time
 
     summary_text = result["summary"]
+    
+    if trace_id:
+        get_telemetry_manager().log_agent_step(
+            trace_id=trace_id,
+            agent_name="SearchAgent",
+            action="DenseRetrieval",
+            model="embedding-local",
+            input_data=query,
+            output_data=summary_text,
+            prompt_tokens=len(query.split()), 
+            completion_tokens=len(summary_text.split()),
+            latency_seconds=elapsed
+        )
+
     ai_message = AIMessage(
         content=f"Search Agent Retrieval Results:\n\n{summary_text}",
         name="SearchAgent",

@@ -221,9 +221,9 @@ class OllamaLLaVAEngine(BaseVisionEngine):
 
 
 class GeminiVisionEngine(BaseVisionEngine):
-    """Google Gemini REST API implementation (gemini-flash-latest)."""
+    """Google Gemini REST API implementation (gemini-3.5-flash-lite)."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-flash-latest"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.5-flash-lite"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = os.getenv("GEMINI_VISION_MODEL", model)
         self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
@@ -237,8 +237,7 @@ class GeminiVisionEngine(BaseVisionEngine):
         temperature: float = 0.1,
     ) -> Dict[str, Any]:
         if not self.api_key:
-            logger.error("GEMINI_API_KEY is not set.")
-            return {"raw_text": "", "error": "Missing GEMINI_API_KEY"}
+            raise ValueError("GEMINI_API_KEY is missing. Please set it in your .env file.")
 
         payload = {
             "contents": [{
@@ -253,12 +252,16 @@ class GeminiVisionEngine(BaseVisionEngine):
                 ]
             }],
             "generationConfig": {
-                "temperature": temperature
+                "temperature": temperature,
+                "maxOutputTokens": 8192
             }
         }
 
+        # Strict 5-second pacing gap
+        await asyncio.sleep(5)
+
         async with httpx.AsyncClient(timeout=60.0) as client:
-            max_retries = 3
+            max_retries = 5
             retry_delay = 4.0
             
             for attempt in range(max_retries + 1):
@@ -305,80 +308,7 @@ class GeminiVisionEngine(BaseVisionEngine):
         return _clean_and_parse_json(content)
 
 
-class MockVisionEngine(BaseVisionEngine):
-    """Deterministic Mock VLM Engine for offline local development and unit tests."""
 
-    async def generate_response(
-        self,
-        base64_image: str,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        media_type: str = "image/jpeg",
-        temperature: float = 0.1,
-    ) -> Dict[str, Any]:
-        return {
-            "content": (
-                "### Mock Vision Analysis\n\n"
-                "- **Figure Type**: Bar Chart\n"
-                "- **Key Metric**: Total Operating Revenue grew by 18.5% YoY.\n"
-                "- **Observations**: Q1 ($110M), Q2 ($125M), Q3 ($140M), Q4 ($155M)."
-            ),
-            "usage": {"prompt_tokens": 120, "completion_tokens": 65},
-            "model": "mock-vlm-engine",
-        }
-
-    async def extract_structured_json(
-        self,
-        base64_image: str,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        media_type: str = "image/jpeg",
-    ) -> Dict[str, Any]:
-        import re
-        p_lower = prompt.lower()
-        if re.search(r"\b(table|tables|tabular|balance sheet|income statement)\b", p_lower):
-            return {
-                "title": "Consolidated Statement of Income",
-                "headers": ["Line Item", "Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024"],
-                "rows": [
-                    ["Total Revenue", "$120.5M", "$135.2M", "$148.8M", "$162.0M"],
-                    ["Cost of Goods Sold", "$45.2M", "$49.1M", "$53.4M", "$57.8M"],
-                    ["Gross Profit", "$75.3M", "$86.1M", "$95.4M", "$104.2M"],
-                    ["Operating Expenses", "$48.2M", "$53.9M", "$58.2M", "$60.1M"],
-                    ["Operating Income", "$27.1M", "$32.2M", "$37.2M", "$44.1M"],
-                    ["Net Income", "$21.5M", "$25.8M", "$29.6M", "$35.2M"],
-                ],
-                "summary": "Consolidated quarterly income statement showing margin expansion and revenue growth.",
-                "key_metrics": {
-                    "Q4 Revenue": "$162.0M",
-                    "Q4 Operating Income": "$44.1M",
-                    "Gross Margin": "64.3%",
-                },
-                "currency": "USD",
-                "scale": "Millions",
-            }
-
-        return {
-            "title": "Quarterly Operating Performance",
-            "chart_type": "bar",
-            "x_axis_label": "Quarter",
-            "y_axis_label": "USD Millions",
-            "series": [
-                {
-                    "series_name": "Revenue",
-                    "data_points": [
-                        {"label": "Q1", "value": 110.0, "raw_value": "$110M", "unit": "USD Millions"},
-                        {"label": "Q2", "value": 125.0, "raw_value": "$125M", "unit": "USD Millions"},
-                        {"label": "Q3", "value": 140.0, "raw_value": "$140M", "unit": "USD Millions"},
-                        {"label": "Q4", "value": 155.0, "raw_value": "$155M", "unit": "USD Millions"},
-                    ],
-                }
-            ],
-            "summary": "Revenue increased steadily over four quarters.",
-            "key_insights": ["Annual revenue reached $530M", "Q4 was highest performing quarter"],
-            "notable_anomalies": [],
-            "confidence_score": 0.98,
-        }
 
 
 def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
@@ -388,8 +318,7 @@ def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
     if provider_str in (VLMProviderType.OPENAI.value, "openai"):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key or api_key.startswith("your_"):
-            logger.info("OpenAI API key unconfigured. Defaulting to MockVisionEngine.")
-            return MockVisionEngine()
+            raise ValueError("OPENAI_API_KEY is missing. Please set it in your .env file.")
         return OpenAIVisionEngine()
 
     elif provider_str in (VLMProviderType.LLAVA_OLLAMA.value, "llava", "ollama"):
@@ -398,17 +327,8 @@ def get_vision_engine(provider: Optional[str] = None) -> BaseVisionEngine:
     elif provider_str in (VLMProviderType.GEMINI.value, "gemini"):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key or api_key.startswith("your_"):
-            logger.info("Gemini API key unconfigured. Defaulting to MockVisionEngine.")
-            return MockVisionEngine()
+            raise ValueError("GEMINI_API_KEY is missing. Please set it in your .env file.")
         return GeminiVisionEngine()
 
-    elif provider_str in (VLMProviderType.MOCK.value, "mock"):
-        return MockVisionEngine()
-
-    logger.warning(f"Unknown VLM provider '{provider_str}'. Falling back to OpenAIVisionEngine.")
-    return OpenAIVisionEngine()
-
-
-# Alias for backward compatibility
-get_vlm_engine = get_vision_engine
-
+    logger.warning(f"Unknown VLM provider '{provider_str}'. Falling back to GeminiVisionEngine.")
+    return GeminiVisionEngine()

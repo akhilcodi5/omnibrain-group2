@@ -6,7 +6,6 @@ iterative Self-RAG fact-checking, and executive memo formatting for visual figur
 
 import base64
 import logging
-import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Union
@@ -21,6 +20,7 @@ from agents.cross_modal_verifier import CrossModalVerifier
 from agents.state import AgentState
 from agents.visual_analytics import VisualAnalyticsEngine
 from agents.visual_tools import VisualMemoFormatter
+from app.core.telemetry import get_telemetry_manager
 from app.models.vision_schemas import (
     BoundingBox,
     ChartType,
@@ -224,13 +224,30 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     memo_blocks: List[VisualAnalyticalMemoBlock] = []
     citations = []
 
+    # Filter contextually relevant images using RAG retrieved documents' page numbers
+    if retrieved_docs and referenced_images:
+        relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
+        if relevant_pages:
+            filtered_images = []
+            for img in referenced_images:
+                match = re.search(r'_p(\d+)_', img)
+                if match:
+                    img_page = int(match.group(1))
+                    if img_page in relevant_pages:
+                        filtered_images.append(img)
+                else:
+                    # Keep images if we cannot parse their page number
+                    filtered_images.append(img)
+            
+            logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
+            referenced_images = filtered_images
+
     if referenced_images:
         for idx, img_path in enumerate(referenced_images):
             img_page = idx + 1
-            if isinstance(img_path, str):
-                match = re.search(r'_p(\d+)_', img_path)
-                if match:
-                    img_page = int(match.group(1))
+            match = re.search(r'_p(\d+)_', img_path)
+            if match:
+                img_page = int(match.group(1))
 
             memo_block = await agent.analyze_and_verify_figure(
                 image_input=img_path,
@@ -273,12 +290,12 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="VisionAgent",
             action="MultiModalAnalysis",
-            model="gemini-flash-latest",
-            input_data=f"Query: {query}, Images: {len(referenced_images)}",
-            output_data=formatted_sections[:300],
+            model="gemini-1.5-pro",
+            input_data=f"Query: {query}, Images: {referenced_images}",
+            output_data=formatted_sections,
             prompt_tokens=800 * len(memo_blocks) if memo_blocks else 800,
             completion_tokens=len(formatted_sections.split()),
-            latency_seconds=elapsed,
+            latency_seconds=elapsed
         )
 
     return {
@@ -291,22 +308,3 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
 
 
 
-class VisionAgent(VisualAnalyticsIntegratorAgent):
-    """Subclass/alias for VisionAgent for backward compatibility."""
-
-    async def analyze_visual_asset(
-        self,
-        image_input: Union[str, bytes, Image.Image],
-        query_context: Optional[str] = None,
-        expected_type: Optional[ChartType] = None,
-        crop_box: Optional[BoundingBox] = None,
-        page_number: Optional[int] = None,
-    ) -> VisualAnalyticalMemoBlock:
-        """Alias for analyze_and_verify_figure."""
-        return await self.analyze_and_verify_figure(
-            image_input=image_input,
-            query_context=query_context,
-            expected_type=expected_type,
-            crop_box=crop_box,
-            page_number=page_number,
-        )

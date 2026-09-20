@@ -62,24 +62,34 @@ class VisualAnalyticsEngine:
         abs_delta = round(last_pt.value - first_pt.value, 2)  # type: ignore
         pct_change = cls.calculate_percentage_change(first_pt.value, last_pt.value)  # type: ignore
 
+        # Determine if this series represents sequential time periods or categorical items
+        def is_time_period(label):
+            if not label:
+                return False
+            l = str(label).lower()
+            return any(x in l for x in ["20", "19", "q1", "q2", "q3", "q4", "fy", "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])
+
+        is_sequential = all(is_time_period(p.label) for p in points)
+
         # 2. Sequential Period-Over-Period Growth Rates
         pop_growths = []
-        for i in range(1, len(points)):
-            prev = points[i - 1]
-            curr = points[i]
-            if prev.value is not None and curr.value is not None:
-                step_pct = cls.calculate_percentage_change(prev.value, curr.value)
-                pop_growths.append({
-                    "from_period": prev.label,
-                    "to_period": curr.label,
-                    "from_value": prev.value,
-                    "to_value": curr.value,
-                    "growth_percentage": step_pct,
-                })
+        if is_sequential:
+            for i in range(1, len(points)):
+                prev = points[i - 1]
+                curr = points[i]
+                if prev.value is not None and curr.value is not None:
+                    step_pct = cls.calculate_percentage_change(prev.value, curr.value)
+                    pop_growths.append({
+                        "from_period": prev.label,
+                        "to_period": curr.label,
+                        "from_value": prev.value,
+                        "to_value": curr.value,
+                        "growth_percentage": step_pct,
+                    })
 
-        # 3. CAGR Calculation (if >= 3 points)
+        # 3. CAGR Calculation (if >= 3 points and sequential)
         cagr = None
-        if len(points) >= 3 and first_pt.value > 0 and last_pt.value > 0:
+        if is_sequential and len(points) >= 3 and first_pt.value > 0 and last_pt.value > 0:
             cagr = cls.calculate_cagr(first_pt.value, last_pt.value, len(points) - 1)
 
         # 4. Anomaly & Outlier Detection (Z-Score & Large Swings)

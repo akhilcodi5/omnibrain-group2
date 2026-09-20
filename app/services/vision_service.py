@@ -130,9 +130,11 @@ class VisionService:
             chart_data = None
             if request.expected_type in (ChartType.BAR, ChartType.LINE, ChartType.PIE, ChartType.AREA):
                 try:
+                    schema_str = json.dumps(ExtractedChartData.model_json_schema(), indent=2)
+                    schema_prompt = f"\n\nYou MUST return a single valid JSON object that strictly adheres to the following JSON schema:\n{schema_str}"
                     structured_json = await self.engine.extract_structured_json(
                         base64_image=b64_img,
-                        prompt=CHART_EXTRACTION_PROMPT.format(query_context=context),
+                        prompt=CHART_EXTRACTION_PROMPT.format(query_context=context) + schema_prompt,
                         system_prompt=VISION_SYSTEM_PROMPT,
                         media_type=media_type,
                     )
@@ -167,10 +169,13 @@ class VisionService:
         b64_img = self.encode_image_to_base64(image_input)
         context = query_context or "Extract all series, labels, units, and values from this chart."
         prompt = CHART_EXTRACTION_PROMPT.format(query_context=context)
+        
+        schema_str = json.dumps(ExtractedChartData.model_json_schema(), indent=2)
+        schema_prompt = f"\n\nYou MUST return a single valid JSON object that strictly adheres to the following JSON schema:\n{schema_str}"
 
         raw_json = await self.engine.extract_structured_json(
             base64_image=b64_img,
-            prompt=prompt,
+            prompt=prompt + schema_prompt,
             system_prompt=VISION_SYSTEM_PROMPT,
         )
         try:
@@ -199,10 +204,13 @@ class VisionService:
         b64_img = self.encode_image_to_base64(image_input)
         context = query_context or "Extract all columns, headers, rows, and key financial figures."
         prompt = TABLE_EXTRACTION_PROMPT.format(query_context=context)
+        
+        schema_str = json.dumps(ExtractedTableData.model_json_schema(), indent=2)
+        schema_prompt = f"\n\nYou MUST return a single valid JSON object that strictly adheres to the following JSON schema:\n{schema_str}"
 
         raw_json = await self.engine.extract_structured_json(
             base64_image=b64_img,
-            prompt=prompt,
+            prompt=prompt + schema_prompt,
             system_prompt=VISION_SYSTEM_PROMPT,
         )
         try:
