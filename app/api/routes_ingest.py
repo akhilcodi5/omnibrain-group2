@@ -61,7 +61,7 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
         chunks = chunker.chunk_pages(pages, pdf_name=filename)
 
         # 4. Bulk index chunks into Qdrant VectorStore
-        vector_store = get_vector_store(in_memory=True)
+        vector_store = get_vector_store(in_memory=False)
         doc_payloads = [
             {
                 "chunk_id": chunk.chunk_id,
@@ -76,7 +76,17 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
 
         inserted_ids = vector_store.add_documents(doc_payloads)
 
+        # 5. Ingest extracted 2D PDF tables into SQLite database for SQL queries
+        try:
+            from storage.sql_db import get_financial_db
+            db = get_financial_db()
+            tables_by_page = [p.tables for p in pages]
+            db.ingest_pdf_tables(pdf_name=filename, tables_by_page=tables_by_page)
+        except Exception as e:
+            logger.warning(f"Could not ingest tabular data into SQL database: {e}")
+
         logger.info(f"Successfully ingested '{filename}': {len(pages)} pages, {len(chunks)} chunks, {len(extracted_images)} images.")
+
 
         return IngestResponse(
             pdf_name=filename,

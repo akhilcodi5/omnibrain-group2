@@ -93,14 +93,24 @@ class VectorStore:
             api_key_val = api_key or settings.QDRANT_API_KEY
             try:
                 logger.info(f"Connecting to Qdrant server at {host_val}:{port_val}")
-                self.client = QdrantClient(host=host_val, port=port_val, api_key=api_key_val, timeout=3.0)
-                # Test connection
-                self.client.get_collections()
+                remote_client = QdrantClient(host=host_val, port=port_val, api_key=api_key_val, timeout=2.0)
+                # Actively verify server availability
+                remote_client.get_collections()
+                self.client = remote_client
             except Exception as e:
-                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to in-memory mode.")
-                self.client = QdrantClient(location=":memory:")
+                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to local storage.")
+                try:
+                    import os
+                    os.makedirs("storage/qdrant_data", exist_ok=True)
+                    self.client = QdrantClient(path="storage/qdrant_data")
+                    self.client.get_collections()
+                except Exception as disk_e:
+                    logger.warning(f"Could not initialize disk Qdrant ({disk_e}). Falling back to in-memory mode.")
+                    self.client = QdrantClient(location=":memory:")
 
         self.ensure_collection_exists()
+
+
 
     def ensure_collection_exists(self, vector_size: Optional[int] = None, distance_metric: str = "COSINE") -> None:
         """Create the Qdrant collection if it does not already exist."""
@@ -300,9 +310,10 @@ class VectorStore:
 _vector_store_instance: Optional[VectorStore] = None
 
 
-def get_vector_store(in_memory: bool = True) -> VectorStore:
+def get_vector_store(in_memory: bool = False) -> VectorStore:
     """Factory function for retrieving or initializing the singleton VectorStore instance."""
     global _vector_store_instance
     if _vector_store_instance is None:
         _vector_store_instance = VectorStore(in_memory=in_memory)
     return _vector_store_instance
+

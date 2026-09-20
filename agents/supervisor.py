@@ -1,9 +1,12 @@
 """LangGraph Supervisor Agent node for dynamic query routing, state management, and multi-agent coordination."""
 
 import logging
+import os
+import time
 from typing import Any, Dict, List, Literal, Optional
 from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.graph import END, StateGraph
+from langgraph.checkpoint.memory import MemorySaver
 
 from agents.memo_synthesizer import MemoSynthesizer
 from agents.search_agent import search_agent_node
@@ -11,7 +14,9 @@ from agents.sql_agent import sql_agent_node
 from agents.state import AgentState
 from agents.vision_agent import vision_node
 from agents.visual_routing_evaluator import VisualIntentType, VisualRoutingEvaluator
+from app.core.telemetry import get_telemetry_manager
 from app.models.vision_schemas import VisualAnalyticalMemoBlock
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,14 +87,37 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     text_snippets = [d.get("text", "") for d in retrieved_docs if isinstance(d, dict)]
     sql_dict = sql_results[0] if sql_results and isinstance(sql_results, list) else None
 
+    # Extract company name dynamically from retrieved document metadata or fallback
+    company_name = "Target Enterprise Entity"
+    if retrieved_docs and isinstance(retrieved_docs, list) and isinstance(retrieved_docs[0], dict):
+        pdf_name = retrieved_docs[0].get("pdf_name", "")
+        if pdf_name:
+            company_name = os.path.splitext(os.path.basename(pdf_name))[0].strip()
+
     # Synthesize Final Investment Memo
+    start_time = time.time()
     final_memo = MemoSynthesizer.synthesize_investment_memo(
-        company_name="Target Enterprise Entity",
+        company_name=company_name,
         analyst_query=query,
         visual_blocks=visual_blocks,
         text_context_snippets=text_snippets,
         sql_metrics=sql_dict,
     )
+    elapsed = time.time() - start_time
+
+    trace_id = state.get("trace_id")
+    if trace_id:
+        get_telemetry_manager().log_agent_step(
+            trace_id=trace_id,
+            agent_name="LangGraphSupervisor",
+            action="SynthesizeMemo",
+            model="gemini-flash-latest",
+            input_data=query,
+            output_data=final_memo[:300],
+            prompt_tokens=450,
+            completion_tokens=len(final_memo.split()),
+            latency_seconds=elapsed,
+        )
 
     ai_msg = AIMessage(
         content=final_memo,
@@ -118,7 +146,7 @@ def route_supervisor_edge(state: AgentState) -> Literal["search_agent", "vision_
     return END
 
 
-def create_supervisor_graph() -> StateGraph:
+def create_supervisor_graph(use_checkpointer: bool = False) -> StateGraph:
     """Build and compile the complete LangGraph Multi-Agent StateGraph."""
     workflow = StateGraph(AgentState)
 
@@ -153,4 +181,8 @@ def create_supervisor_graph() -> StateGraph:
     # Synthesizer is the terminal node
     workflow.add_edge("synthesizer", END)
 
+    if use_checkpointer:
+        memory = MemorySaver()
+        return workflow.compile(checkpointer=memory)
     return workflow.compile()
+

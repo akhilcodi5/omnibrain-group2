@@ -7,9 +7,14 @@ iterative Self-RAG fact-checking, and executive memo formatting for visual figur
 import base64
 import logging
 import os
+import re
+import time
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
 from PIL import Image
+
+from app.core.telemetry import get_telemetry_manager
+
 
 from agents.cross_modal_self_rag import CrossModalSelfRAG
 from agents.cross_modal_verifier import CrossModalVerifier
@@ -182,13 +187,33 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Executing Visual Analytics & Multi-Modal Tool Integrator Node in LangGraph...")
     
-    vector_store = state.get("vector_store") or get_vector_store(in_memory=True)
+    start_time = time.time()
+    vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     agent = VisualAnalyticsIntegratorAgent(vector_store=vector_store)
     query = state.get("query", "")
     referenced_images: List[str] = state.get("referenced_images", [])
     current_evidence: List[Dict[str, Any]] = state.get("visual_evidence", [])
     retrieved_docs: List[Dict[str, Any]] = state.get("retrieved_docs", [])
     
+    # Filter contextually relevant images using RAG retrieved documents' page numbers
+    if retrieved_docs and referenced_images:
+        relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
+        if relevant_pages:
+            filtered_images = []
+            for img in referenced_images:
+                if isinstance(img, str):
+                    match = re.search(r'_p(\d+)_', img)
+                    if match:
+                        img_page = int(match.group(1))
+                        if img_page in relevant_pages:
+                            filtered_images.append(img)
+                            continue
+                filtered_images.append(img)
+            
+            if filtered_images:
+                logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
+                referenced_images = filtered_images
+
     # Aggregate text context from retrieved documents
     text_context = " ".join([
         doc.get("content", "") or doc.get("text", "") 
@@ -201,15 +226,21 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
 
     if referenced_images:
         for idx, img_path in enumerate(referenced_images):
+            img_page = idx + 1
+            if isinstance(img_path, str):
+                match = re.search(r'_p(\d+)_', img_path)
+                if match:
+                    img_page = int(match.group(1))
+
             memo_block = await agent.analyze_and_verify_figure(
                 image_input=img_path,
                 text_context=text_context if text_context else None,
                 query_context=query,
-                page_number=idx + 1,
+                page_number=img_page,
             )
             memo_blocks.append(memo_block)
             citations.append({
-                "source": img_path,
+                "source": str(img_path) if isinstance(img_path, str) else f"figure_{idx+1}",
                 "citation_tag": memo_block.citation_tag,
                 "grounding_score": memo_block.verification_report.grounding_score if memo_block.verification_report else 1.0,
             })
@@ -235,6 +266,21 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
         valid_scores = [b.verification_report.grounding_score for b in memo_blocks if b.verification_report]
         avg_grounding = sum(valid_scores) / len(valid_scores)
 
+    elapsed = time.time() - start_time
+    trace_id = state.get("trace_id")
+    if trace_id:
+        get_telemetry_manager().log_agent_step(
+            trace_id=trace_id,
+            agent_name="VisionAgent",
+            action="MultiModalAnalysis",
+            model="gemini-flash-latest",
+            input_data=f"Query: {query}, Images: {len(referenced_images)}",
+            output_data=formatted_sections[:300],
+            prompt_tokens=800 * len(memo_blocks) if memo_blocks else 800,
+            completion_tokens=len(formatted_sections.split()),
+            latency_seconds=elapsed,
+        )
+
     return {
         "messages": [ai_message],
         "visual_evidence": current_evidence + [b.model_dump() for b in memo_blocks],
@@ -242,6 +288,7 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
         "is_grounded": avg_grounding >= 0.75,
         "next_agent": "Supervisor",
     }
+
 
 
 class VisionAgent(VisualAnalyticsIntegratorAgent):

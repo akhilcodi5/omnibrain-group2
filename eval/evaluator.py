@@ -101,8 +101,12 @@ class MultiModalRAGEvaluator:
         """Run full evaluation suite over multi-modal RAG outputs and log metrics to Langfuse."""
         # Aggregate evidence text
         text_corpus = " ".join([d.get("text", "") for d in retrieved_docs if isinstance(d, dict)])
-        visual_corpus = " ".join([str(v.get("analysis", "")) for v in visual_evidence if isinstance(v, dict)])
+        visual_corpus = " ".join([
+            str(v.get("analysis") or v.get("markdown_formatted_block") or v.get("figure_title") or "")
+            for v in visual_evidence if isinstance(v, dict)
+        ])
         combined_evidence = text_corpus + " " + visual_corpus
+
 
         claims = self.extract_factual_claims(generated_memo)
         faith_res = self.evaluate_grounding_faithfulness(claims, combined_evidence)
