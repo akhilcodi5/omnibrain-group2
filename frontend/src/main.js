@@ -201,7 +201,7 @@ export async function handleFileUpload(event) {
       if (artifactContainer) {
         artifactContainer.innerHTML = '';
         currentUploadedImages.forEach((img, idx) => {
-          const filename = img.split('/').pop().split('\\\\').pop(); // Handle both slashes
+          const filename = img.split(/[/\\]/).pop(); // Handle both Windows backslashes and POSIX forward slashes
           const isTable = filename.startsWith('table_');
           const isChart = !isTable;
           

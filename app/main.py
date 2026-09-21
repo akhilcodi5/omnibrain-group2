@@ -78,6 +78,7 @@ if os.path.exists(frontend_dist_assets):
 
 # Mount extracted images for frontend artifact viewing
 os.makedirs("storage/extracted_images", exist_ok=True)
+app.mount("/api/v1/images/extracted_images", StaticFiles(directory="storage/extracted_images"), name="extracted_images_nested")
 app.mount("/api/v1/images", StaticFiles(directory="storage/extracted_images"), name="extracted_images")
 
 
