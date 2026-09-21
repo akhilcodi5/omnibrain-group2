@@ -6,6 +6,7 @@ iterative Self-RAG fact-checking, and executive memo formatting for visual figur
 
 import base64
 import logging
+import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Union
@@ -305,6 +306,33 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
         "is_grounded": avg_grounding >= 0.75,
         "next_agent": "Supervisor",
     }
+
+
+class VisionAgent(VisualAnalyticsIntegratorAgent):
+    """Subclass/alias for VisionAgent for backward compatibility."""
+
+    def __init__(self, vision_service: Optional[Any] = None, vector_store: Optional[Any] = None):
+        super().__init__(vector_store=vector_store)
+        if vision_service:
+            self.service = vision_service
+
+    async def analyze_visual_asset(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+        expected_type: Optional[ChartType] = None,
+        crop_box: Optional[BoundingBox] = None,
+        page_number: Optional[int] = None,
+    ) -> VisualAnalyticalMemoBlock:
+        """Alias for analyze_and_verify_figure."""
+        return await self.analyze_and_verify_figure(
+            image_input=image_input,
+            query_context=query_context,
+            expected_type=expected_type,
+            crop_box=crop_box,
+            page_number=page_number,
+        )
+
 
 
 

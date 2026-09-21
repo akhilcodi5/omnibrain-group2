@@ -6,8 +6,6 @@ from app.models.vision_schemas import (
     VerificationStatus,
     VisualCitationPayload,
 )
-from ui.components.citation_viewer import render_citation_badge
-from ui.components.thought_trace import render_thought_trace
 
 
 def test_visual_citation_payload_structure():

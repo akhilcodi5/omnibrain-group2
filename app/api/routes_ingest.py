@@ -61,11 +61,6 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
         chunker = TextChunker()
         chunks = chunker.chunk_pages(pages, pdf_name=filename)
 
-        # 3.5 Ingest extracted tables into SQL Database
-        tables_by_page = [page.tables for page in pages]
-        financial_db = get_financial_db()
-        financial_db.ingest_pdf_tables(filename, tables_by_page)
-
         # 4. Bulk index chunks into Qdrant VectorStore
         vector_store = get_vector_store(in_memory=False)
         doc_payloads = [
@@ -84,7 +79,6 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
 
         # 5. Ingest extracted 2D PDF tables into SQLite database for SQL queries
         try:
-            from storage.sql_db import get_financial_db
             db = get_financial_db()
             tables_by_page = [p.tables for p in pages]
             db.ingest_pdf_tables(pdf_name=filename, tables_by_page=tables_by_page)

@@ -1,59 +1,25 @@
 import os
-import base64
-import requests
-from dotenv import load_dotenv
+import pytest
 
-load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-
-if not api_key or api_key.startswith("your_"):
-    print("Please set a valid GEMINI_API_KEY in your .env file.")
-    exit(1)
-
-# Read and encode the image
-image_path = "test_chart.png"
-if not os.path.exists(image_path):
-    print(f"Error: {image_path} not found.")
-    exit(1)
-
-with open(image_path, "rb") as image_file:
-    base64_image = base64.b64encode(image_file.read()).decode("utf-8")
-
-question = "What data is shown in this chart? Please extract the key numbers."
-
-for model in ["gemini-3.5-flash-lite"]:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    
+@pytest.mark.skipif(not os.getenv("GEMINI_API_KEY") or not os.path.exists("test_chart.png"), reason="Manual test requiring test_chart.png and GEMINI_API_KEY")
+def test_gemini_api_direct():
+    """Manual direct API verification with sample chart."""
+    import base64
+    import requests
+    api_key = os.getenv("GEMINI_API_KEY")
+    with open("test_chart.png", "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
     payload = {
         "contents": [{
             "parts": [
-                {"text": question},
-                {
-                    "inline_data": {
-                        "mime_type": "image/png",
-                        "data": base64_image
-                    }
-                }
+                {"text": "Extract chart data"},
+                {"inline_data": {"mime_type": "image/png", "data": base64_image}}
             ]
-        }],
-        "generationConfig": {
-            "temperature": 0.1
-        }
+        }]
     }
-    
-    print(f"Sending request to {model}...")
     response = requests.post(url, json=payload)
-    
-    if response.status_code == 200:
-        print("SUCCESS (200 OK)\n")
-        data = response.json()
-        if "candidates" in data and len(data["candidates"]) > 0:
-            parts = data["candidates"][0].get("content", {}).get("parts", [])
-            if parts:
-                print("Response:")
-                print(parts[0].get("text", ""))
-        else:
-            print("No content returned.")
-    else:
-        print(f"FAILED (Status Code: {response.status_code})")
-        print(response.text)
+    if response.status_code in (429, 503):
+        pytest.skip(f"Gemini API temporarily unavailable: HTTP {response.status_code}")
+    assert response.status_code == 200
+
