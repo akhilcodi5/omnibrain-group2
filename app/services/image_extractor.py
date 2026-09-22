@@ -8,9 +8,12 @@ from typing import Any, Dict, List, Optional, Union
 from PIL import Image
 
 try:
-    import fitz  # PyMuPDF
+    import pymupdf as fitz
 except ImportError:
-    fitz = None
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
 
 try:
     import pdfplumber

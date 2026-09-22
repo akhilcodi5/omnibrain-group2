@@ -6,9 +6,12 @@ import re
 from typing import Any, Dict, List, Optional, Union
 
 try:
-    import fitz  # PyMuPDF
+    import pymupdf as fitz
 except ImportError:
-    fitz = None
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
 
 try:
     import pdfplumber
