@@ -14,8 +14,10 @@ from agents.state import AgentState
 from agents.self_rag import self_rag_node
 from agents.vision_agent import vision_node
 from agents.visual_routing_evaluator import VisualIntentType, VisualRoutingEvaluator
+from app.core.telemetry import get_telemetry_manager
 from app.models.vision_schemas import VisualAnalyticalMemoBlock
 from app.core.telemetry import get_telemetry_manager
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +46,12 @@ def supervisor_node(state: AgentState) -> Dict[str, Any]:
 
     if iteration >= 4:
         next_node = "synthesizer"
-    elif not has_search_run:
-        next_node = "search_agent"
     elif intent.requires_visual_agent and not has_vision_run:
         next_node = "vision_agent"
     elif any(k in query.lower() for k in ["price", "p/e", "market cap", "stock", "52-week", "ticker"]) and not has_sql_run:
         next_node = "sql_agent"
+    elif not has_search_run:
+        next_node = "search_agent"
     else:
         next_node = "synthesizer"
 
@@ -146,7 +148,7 @@ def route_supervisor_edge(state: AgentState) -> Literal["search_agent", "vision_
     return END
 
 
-def create_supervisor_graph() -> StateGraph:
+def create_supervisor_graph(use_checkpointer: bool = False) -> StateGraph:
     """Build and compile the complete LangGraph Multi-Agent StateGraph."""
     workflow = StateGraph(AgentState)
 

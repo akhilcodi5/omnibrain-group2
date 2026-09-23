@@ -6,11 +6,15 @@ iterative Self-RAG fact-checking, and executive memo formatting for visual figur
 
 import base64
 import logging
+import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Union
 from langchain_core.messages import AIMessage
 from PIL import Image
+
+from app.core.telemetry import get_telemetry_manager
+
 
 from agents.cross_modal_self_rag import CrossModalSelfRAG
 from agents.cross_modal_verifier import CrossModalVerifier
@@ -107,9 +111,14 @@ class VisualAnalyticsIntegratorAgent:
         }
         
         if isinstance(image_input, str):
-            kwargs["image_path"] = image_input
+            if image_input.startswith(("data:image", "http://", "https://")) or not os.path.exists(image_input):
+                kwargs["image_base64"] = image_input
+            else:
+                kwargs["image_path"] = image_input
         elif isinstance(image_input, bytes):
             kwargs["image_base64"] = base64.b64encode(image_input).decode('utf-8')
+        elif isinstance(image_input, Image.Image):
+            kwargs["image_base64"] = self.service.encode_image_to_base64(image_input)
             
         request = VisionExtractionRequest(**kwargs)
 
@@ -187,6 +196,25 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     current_evidence: List[Dict[str, Any]] = state.get("visual_evidence", [])
     retrieved_docs: List[Dict[str, Any]] = state.get("retrieved_docs", [])
     
+    # Filter contextually relevant images using RAG retrieved documents' page numbers
+    if retrieved_docs and referenced_images:
+        relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
+        if relevant_pages:
+            filtered_images = []
+            for img in referenced_images:
+                if isinstance(img, str):
+                    match = re.search(r'_p(\d+)_', img)
+                    if match:
+                        img_page = int(match.group(1))
+                        if img_page in relevant_pages:
+                            filtered_images.append(img)
+                            continue
+                filtered_images.append(img)
+            
+            if filtered_images:
+                logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
+                referenced_images = filtered_images
+
     # Aggregate text context from retrieved documents
     text_context = " ".join([
         doc.get("content", "") or doc.get("text", "") 
@@ -230,7 +258,7 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             )
             memo_blocks.append(memo_block)
             citations.append({
-                "source": img_path,
+                "source": str(img_path) if isinstance(img_path, str) else f"figure_{idx+1}",
                 "citation_tag": memo_block.citation_tag,
                 "grounding_score": memo_block.verification_report.grounding_score if memo_block.verification_report else 1.0,
             })
@@ -278,6 +306,33 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
         "is_grounded": avg_grounding >= 0.75,
         "next_agent": "Supervisor",
     }
+
+
+class VisionAgent(VisualAnalyticsIntegratorAgent):
+    """Subclass/alias for VisionAgent for backward compatibility."""
+
+    def __init__(self, vision_service: Optional[Any] = None, vector_store: Optional[Any] = None):
+        super().__init__(vector_store=vector_store)
+        if vision_service:
+            self.service = vision_service
+
+    async def analyze_visual_asset(
+        self,
+        image_input: Union[str, bytes, Image.Image],
+        query_context: Optional[str] = None,
+        expected_type: Optional[ChartType] = None,
+        crop_box: Optional[BoundingBox] = None,
+        page_number: Optional[int] = None,
+    ) -> VisualAnalyticalMemoBlock:
+        """Alias for analyze_and_verify_figure."""
+        return await self.analyze_and_verify_figure(
+            image_input=image_input,
+            query_context=query_context,
+            expected_type=expected_type,
+            crop_box=crop_box,
+            page_number=page_number,
+        )
+
 
 
 

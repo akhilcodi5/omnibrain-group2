@@ -6,14 +6,22 @@ import re
 from typing import Any, Dict, List, Optional, Union
 
 try:
-    import fitz  # PyMuPDF
+    import pymupdf as fitz
 except ImportError:
-    fitz = None
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
 
 try:
     import pdfplumber
 except ImportError:
     pdfplumber = None
+
+try:
+    import pypdf
+except ImportError:
+    pypdf = None
 
 from app.models.schemas import PDFPageSchema
 
@@ -104,21 +112,39 @@ class PDFParser:
 
         # Fallback if fitz was unavailable or returned 0 pages
         if not pages and pdf_bytes:
-            logger.warning(f"Using fallback text decoder for '{pdf_name}'")
-            try:
-                raw_str = pdf_bytes.decode("latin-1", errors="ignore")
-                # Basic string text extraction fallback
-                text_clean = re.sub(r"[^\x20-\x7E\n\t]", " ", raw_str)[:2000]
-                pages.append(
-                    PDFPageSchema(
-                        page_number=1,
-                        text=text_clean,
-                        tables=[],
-                        section_title="Document Overview",
+            if pypdf is not None:
+                try:
+                    reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+                    for idx, page in enumerate(reader.pages):
+                        page_text = page.extract_text() or ""
+                        heading = self._extract_section_heading(page_text)
+                        pages.append(
+                            PDFPageSchema(
+                                page_number=idx + 1,
+                                text=page_text.strip(),
+                                tables=[],
+                                section_title=heading or f"Page {idx + 1}",
+                            )
+                        )
+                except Exception as e:
+                    logger.debug(f"pypdf fallback extraction warning: {e}")
+
+            if not pages:
+                logger.warning(f"Using fallback text decoder for '{pdf_name}'")
+                try:
+                    raw_str = pdf_bytes.decode("latin-1", errors="ignore")
+                    # Basic string text extraction fallback
+                    text_clean = re.sub(r"[^\x20-\x7E\n\t]", " ", raw_str)[:2000]
+                    pages.append(
+                        PDFPageSchema(
+                            page_number=1,
+                            text=text_clean,
+                            tables=[],
+                            section_title="Document Overview",
+                        )
                     )
-                )
-            except Exception as e:
-                logger.error(f"Fallback text decoder failed: {e}")
+                except Exception as e:
+                    logger.error(f"Fallback text decoder failed: {e}")
 
         logger.info(f"Successfully parsed {len(pages)} pages from '{pdf_name}'")
         return pages

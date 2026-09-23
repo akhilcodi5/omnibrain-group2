@@ -8,9 +8,12 @@ from typing import Any, Dict, List, Optional, Union
 from PIL import Image
 
 try:
-    import fitz  # PyMuPDF
+    import pymupdf as fitz
 except ImportError:
-    fitz = None
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
 
 try:
     import pdfplumber
@@ -126,7 +129,7 @@ class PDFImageExtractor:
 
                         image_id = f"img_{clean_pdf_name}_p{page_num}_{img_idx}_{uuid.uuid4().hex[:6]}"
                         file_filename = f"{image_id}.{image_ext}"
-                        image_path = os.path.join(target_dir, file_filename)
+                        image_path = os.path.join(target_dir, file_filename).replace("\\", "/")
 
                         pil_img.save(image_path)
 
@@ -158,7 +161,7 @@ class PDFImageExtractor:
                                 pix = page.get_pixmap(clip=clip, dpi=150)
                                 image_id = f"chart_{clean_pdf_name}_p{page_num}_{chart_idx}_{uuid.uuid4().hex[:6]}"
                                 file_filename = f"{image_id}.png"
-                                image_path = os.path.join(target_dir, file_filename)
+                                image_path = os.path.join(target_dir, file_filename).replace("\\", "/")
                                 pix.save(image_path)
                                 
                                 extracted_images.append(

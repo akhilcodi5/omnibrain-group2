@@ -46,6 +46,18 @@ async def root():
     }
 
 
+@app.get("/health", include_in_schema=False)
+@app.get("/healthz", include_in_schema=False)
+async def root_health():
+    """Root health check alias for container orchestrators and load balancers."""
+    return {
+        "status": "healthy",
+        "service": "OmniBrain API",
+        "version": "0.1.0",
+    }
+
+
+
 @app.get("/workspace", response_class=FileResponse, tags=["UI"])
 @app.get("/ui", response_class=FileResponse, tags=["UI"])
 async def serve_workspace():
@@ -66,6 +78,7 @@ if os.path.exists(frontend_dist_assets):
 
 # Mount extracted images for frontend artifact viewing
 os.makedirs("storage/extracted_images", exist_ok=True)
+app.mount("/api/v1/images/extracted_images", StaticFiles(directory="storage/extracted_images"), name="extracted_images_nested")
 app.mount("/api/v1/images", StaticFiles(directory="storage/extracted_images"), name="extracted_images")
 
 

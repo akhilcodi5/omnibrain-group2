@@ -178,7 +178,22 @@ class VisionService:
             prompt=prompt + schema_prompt,
             system_prompt=VISION_SYSTEM_PROMPT,
         )
-        return ExtractedChartData.model_validate(raw_json)
+        try:
+            if not isinstance(raw_json, dict):
+                raw_json = {}
+            if "summary" not in raw_json:
+                raw_json["summary"] = raw_json.get("error") or raw_json.get("raw_text") or "No chart summary provided."
+            if "chart_type" not in raw_json or not raw_json["chart_type"]:
+                raw_json["chart_type"] = "unknown"
+            return ExtractedChartData.model_validate(raw_json)
+        except Exception as e:
+            logger.warning(f"Chart schema validation fallback: {e}")
+            return ExtractedChartData(
+                title=raw_json.get("title", "Visual Figure"),
+                chart_type=ChartType.UNKNOWN,
+                summary=raw_json.get("summary") or raw_json.get("error") or str(raw_json.get("raw_text", "Could not parse valid chart data.")),
+                key_insights=[str(e)] if "error" in raw_json else [],
+            )
 
     async def extract_structured_table(
         self,
@@ -198,4 +213,18 @@ class VisionService:
             prompt=prompt + schema_prompt,
             system_prompt=VISION_SYSTEM_PROMPT,
         )
-        return ExtractedTableData.model_validate(raw_json)
+        try:
+            if not isinstance(raw_json, dict):
+                raw_json = {}
+            if "summary" not in raw_json:
+                raw_json["summary"] = raw_json.get("error") or raw_json.get("raw_text") or "No table summary provided."
+            return ExtractedTableData.model_validate(raw_json)
+        except Exception as e:
+            logger.warning(f"Table schema validation fallback: {e}")
+            return ExtractedTableData(
+                title=raw_json.get("title", "Visual Table"),
+                headers=raw_json.get("headers", []),
+                rows=raw_json.get("rows", []),
+                summary=raw_json.get("summary") or raw_json.get("error") or str(raw_json.get("raw_text", "Could not parse valid table data.")),
+            )
+

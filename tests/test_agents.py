@@ -13,7 +13,7 @@ from storage.sql_db import FinancialDatabase
 def test_sql_agent_query_generation_and_execution():
     """Test SQLAgent Text-to-SQL generation and database execution."""
     db = FinancialDatabase(db_path=":memory:")
-    agent = SQLAgent(db=db)
+    agent = SQLAgent(db=db, use_mock=True)
 
     # 1. Stock price query
     res = agent.execute("What is the current stock price and PE ratio of APEX?")

@@ -1,14 +1,13 @@
 import os
-import requests
-from dotenv import load_dotenv
+import pytest
 
-load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-
-for model in ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.8-flash"]:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": "Hello, how are you?"}]}]
-    }
+@pytest.mark.skipif(not os.getenv("GEMINI_API_KEY"), reason="Manual test requiring GEMINI_API_KEY")
+def test_gemini_model_connectivity():
+    """Verify Gemini API connectivity for flash models."""
+    import requests
+    api_key = os.getenv("GEMINI_API_KEY")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
+    payload = {"contents": [{"parts": [{"text": "Hello"}]}]}
     response = requests.post(url, json=payload)
-    print(f"{model}: {response.status_code}")
+    assert response.status_code in (200, 429, 503)
+

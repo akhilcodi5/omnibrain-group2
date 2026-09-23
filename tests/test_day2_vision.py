@@ -14,6 +14,7 @@ from app.models.vision_schemas import (
 from app.services.image_preprocessor import ImagePreprocessor
 from app.services.vision_service import VisionService
 from app.services.vlm_engine import (
+    GeminiVisionEngine,
     MockVisionEngine,
     OllamaLLaVAEngine,
     OpenAIVisionEngine,
@@ -67,12 +68,15 @@ def test_image_preprocessor_vlm_metadata():
 
 
 def test_vlm_engine_factory():
-    """Test engine factory instantiation for mock, ollama, and openai."""
+    """Test engine factory instantiation for mock, ollama, openai, and gemini."""
     mock_engine = get_vision_engine("mock")
     assert isinstance(mock_engine, MockVisionEngine)
 
     ollama_engine = get_vision_engine("ollama")
     assert isinstance(ollama_engine, OllamaLLaVAEngine)
+
+    gemini_engine = get_vision_engine("gemini")
+    assert isinstance(gemini_engine, (GeminiVisionEngine, MockVisionEngine))
 
 
 @pytest.mark.asyncio
@@ -142,3 +146,18 @@ def test_clean_and_parse_json_markdown_fencing():
 
     # 3. Empty input
     assert _clean_and_parse_json("") == {}
+
+
+def test_get_vlm_engine_alias():
+    """Verify get_vlm_engine alias matches get_vision_engine."""
+    from app.services.vlm_engine import get_vision_engine, get_vlm_engine
+    assert get_vlm_engine is get_vision_engine
+
+
+def test_gemini_vision_engine_configuration():
+    """Verify GeminiVisionEngine initializes endpoint and default model properly."""
+    engine = GeminiVisionEngine(api_key="test-gemini-key", model="gemini-flash-latest")
+    assert engine.api_key == "test-gemini-key"
+    assert engine.model == "gemini-flash-latest"
+    assert "generativelanguage.googleapis.com" in engine.base_url
+

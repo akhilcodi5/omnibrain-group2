@@ -6,9 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 try:
-    import fitz  # PyMuPDF
+    import pymupdf as fitz
 except ImportError:
-    fitz = None
+    try:
+        import fitz
+    except ImportError:
+        fitz = None
 
 from app.main import app
 from app.models.schemas import PDFPageSchema

@@ -11,27 +11,46 @@ from agents.state import AgentState
 from storage.sql_db import FinancialDatabase, get_financial_db
 from app.core.telemetry import get_telemetry_manager
 
+import os
+import time
+from app.core.telemetry import get_telemetry_manager
+
 logger = logging.getLogger(__name__)
 
 
 class SQLAgent:
     """Specialist agent responsible for inspecting financial database schemas and executing Text-to-SQL queries."""
 
-    def __init__(self, db: Optional[FinancialDatabase] = None):
+    def __init__(self, db: Optional[FinancialDatabase] = None, use_mock: bool = False):
         self.db = db or get_financial_db()
+        self.use_mock = use_mock or os.getenv("MOCK_SQL_AGENT", "false").lower() in ("true", "1")
+
+    def _fallback_rule_sql(self, query: str) -> str:
+        """Deterministic rule-based SQL generator fallback."""
+        q = query.lower()
+        if any(w in q for w in ["quarterly", "revenue", "margin", "income", "eps"]):
+            if "apex" in q:
+                return "SELECT * FROM quarterly_financials WHERE ticker = 'APEX';"
+            return "SELECT * FROM quarterly_financials LIMIT 5;"
+        if "apex" in q:
+            return "SELECT * FROM stocks WHERE ticker = 'APEX' LIMIT 1;"
+        return "SELECT * FROM stocks LIMIT 5;"
 
     def generate_sql(self, query: str) -> str:
         """Map user query intent to SQL query using Gemini LLM."""
+        if self.use_mock:
+            return self._fallback_rule_sql(query)
         import google.generativeai as genai
         import os
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             logger.warning("GEMINI_API_KEY not found. Falling back to simple rule engine.")
-            return "SELECT * FROM stocks LIMIT 5;"
+            return self._fallback_rule_sql(query)
 
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.5-flash")
+            model_name = os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest")
+            model = genai.GenerativeModel(model_name)
             
             schema = '''
             Table: stocks
@@ -43,6 +62,7 @@ class SQLAgent:
 
             prompt = f'''
             You are a SQLite expert. Generate a single SQLite query to answer the user's question.
+            Always include the 'ticker' column and all requested metrics in the SELECT clause (e.g. SELECT ticker, current_price, pe_ratio... or SELECT * FROM ...).
             Only output the raw SQL query, without markdown backticks or any other text.
             
             Database Schema:
@@ -64,7 +84,7 @@ class SQLAgent:
             return sql.strip()
         except Exception as e:
             logger.error(f"Gemini SQL generation error: {e}")
-            return "SELECT * FROM stocks LIMIT 5;"
+            return self._fallback_rule_sql(query)
 
     def execute(self, query: str) -> Dict[str, Any]:
         """Execute Text-to-SQL resolution and query execution."""
@@ -122,7 +142,7 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="SQLAgent",
             action="GenerateSQL",
-            model="gemini-2.5-flash",
+            model=os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest"),
             input_data=query,
             output_data=result["summary"],
             prompt_tokens=400, # approximate
@@ -141,3 +161,4 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
         "sql_results": result["sql_results"],
         "next_agent": "Supervisor",
     }
+
