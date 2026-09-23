@@ -1,0 +1,7 @@
+Extract the 'Net sales by reportable segment' table. Compute the year-over-year percentage change for iPhone and Services revenue between 2022 and 2023. Did Services growth offset the decline in iPhone sales?
+
+Management claims in the MD&A section that Services net sales increased in 2023. Verify if the exact percentage or dollar amount of this increase mentioned in the text perfectly matches the data in the Consolidated Statement of Operations table.
+
+What was Apple's total Net Income and Gross Margin in 2023 according to the financial statements? Based on the text, what are the primary risk factors management attributes to any changes in gross margin?
+
+Find the total R&D (Research and Development) expense in the financial tables for 2023. Compare this figure against any mentions of R&D spending in the executive summary text. Are there any numerical discrepancies?

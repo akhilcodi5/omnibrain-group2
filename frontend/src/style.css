@@ -1,0 +1,53 @@
+/* OmniBrain Quant Workspace Styles */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+.material-symbols-outlined.fill {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* Custom refined scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c3c6d5;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #737784;
+}
+
+/* Print optimizations for investment memo export */
+@media print {
+  header,
+  aside:first-of-type,
+  section,
+  #global-toast,
+  #dag-modal,
+  #artifact-modal {
+    display: none !important;
+  }
+
+  aside#memo-aside,
+  aside:last-of-type {
+    width: 100% !important;
+    position: static !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+  }
+}
