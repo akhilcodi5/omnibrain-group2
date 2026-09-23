@@ -192,7 +192,7 @@ class SelfRAGPipeline:
             evaluation = parse_evaluation(raw, bool(chunks))
             trace.append({"attempt_number": attempt, "query": query, "retrieved_chunks": len(chunks),
                           "relevant": evaluation.relevant, "confidence": evaluation.confidence})
-            if evaluation.relevant:
+            if evaluation.relevant and evaluation.recommended_action == "answer":
                 return self._answer(original_query, query, chunks, trace, False)
             if attempt == self.max_attempts:
                 break
