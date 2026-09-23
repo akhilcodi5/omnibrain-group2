@@ -1,8 +1,8 @@
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, Any, TypedDict
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     user_query: str
 
     # `operator.add` reducer so every node that returns "messages" appends
@@ -18,3 +18,7 @@ class AgentState(TypedDict):
     # Safety counter incremented by the supervisor on every routing decision,
     # used to force termination and avoid infinite supervisor <-> agent loops.
     iteration_count: int
+    citations: list
+    retrieval_trace: list
+    metadata_filter: dict[str, Any]
+    rag_pipeline: Any

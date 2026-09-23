@@ -78,6 +78,17 @@ Standard Retrieval-Augmented Generation (RAG) pipelines break down when applied 
 - 📊 **Full-Stack Observability with Langfuse**: Real-time tracing of agent state transitions, token consumption, latency, and reasoning pathways.
 - 🖥️ **Interactive Streamlit UI**: Visualizes agent thought processes, step-by-step reasoning logs, and clickable image/page citation links.
 
+### Current retrieval implementation
+
+`agent.retrieval` provides the production-facing retrieval core used by the RAG
+node. Storage and model integrations are injected as callables so Qdrant/FAISS,
+BM25, and the chosen LLM client can be used without duplicating their clients.
+It performs semantic and keyword retrieval, reciprocal-rank fusion,
+deduplication, bounded Self-RAG retries (configured by
+`MAX_RETRIEVAL_ATTEMPTS`, default `3`), safe query rewriting, and evidence-only
+citations. Page numbers are preserved from chunk metadata and are never inferred
+from chunk positions or accepted from an LLM.
+
 ---
 
 ## 🏛️ System Architecture
