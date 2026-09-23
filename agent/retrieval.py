@@ -85,11 +85,14 @@ class HybridRetriever:
         except Exception:
             return []
         chunks = []
-        for value in values or []:
-            try:
-                chunks.append(RetrievedChunk.from_value(value, method))
-            except (TypeError, ValueError):
-                continue
+        try:
+            for value in values or []:
+                try:
+                    chunks.append(RetrievedChunk.from_value(value, method))
+                except (TypeError, ValueError):
+                    continue
+        except Exception:
+            return chunks
         return chunks
 
     def retrieve(self, query: str, top_k: int = 8,
