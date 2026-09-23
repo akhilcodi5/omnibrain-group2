@@ -143,7 +143,7 @@ def parse_evaluation(value: Any, has_context: bool) -> RelevanceEvaluation:
     action = value.get("recommended_action", "answer")
     if action not in {"answer", "rewrite_query", "retrieve_more"}:
         action = "answer" if bool(value.get("relevant")) else "retrieve_more"
-    return RelevanceEvaluation(bool(value.get("relevant")) and has_context, confidence,
+    return RelevanceEvaluation(value.get("relevant") is True and has_context, confidence,
         str(value.get("reason", "")), str(value.get("missing_information", "")), action)
 
 
