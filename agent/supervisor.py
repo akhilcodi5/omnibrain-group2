@@ -42,7 +42,10 @@ SUPERVISOR_MODEL = os.getenv("SUPERVISOR_MODEL", "gemini-3.6-flash")
 
 # Safety limit on supervisor <-> agent hops to guarantee termination even
 # if the LLM never returns FINISH.
-MAX_SUPERVISOR_ITERATIONS = int(os.getenv("MAX_SUPERVISOR_ITERATIONS", "6"))
+try:
+    MAX_SUPERVISOR_ITERATIONS = max(1, int(os.getenv("MAX_SUPERVISOR_ITERATIONS", "6")))
+except (TypeError, ValueError):
+    MAX_SUPERVISOR_ITERATIONS = 6
 
 llm = ChatGoogleGenerativeAI(
     model=SUPERVISOR_MODEL,
