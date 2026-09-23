@@ -1,82 +1,173 @@
 # 🧠 OmniBrain: Agentic Multi-Modal RAG Orchestrator
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red.svg)](https://streamlit.io/)
+[![Vite](https://img.shields.io/badge/Frontend-Vite-blue.svg)](https://vitejs.dev/)
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
-[![NeMo Guardrails](https://img.shields.io/badge/Safety-NeMo%20Guardrails-purple.svg)](https://github.com/NVIDIA/NeMo-Guardrails)
+[![Guardrails](https://img.shields.io/badge/Safety-Deterministic%20Guardrails-purple.svg)]()
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
+[![Tests Passing](https://img.shields.io/badge/Tests-77%2F77%20Passed-brightgreen.svg)]()
 
-> **An enterprise-grade, hallucination-resistant Agentic Multi-Modal RAG system** engineered for complex reasoning over unstructured documents (PDFs, embedded charts, financial tables) and structured data silos.
+[![Benchmark Pass Rate](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
+
+> **OmniBrain** is an enterprise-grade, hallucination-resistant **Agentic Multi-Modal RAG (Retrieval-Augmented Generation)** platform designed for financial and quantitative research over complex enterprise PDFs containing financial statements, balance sheet tables, trend charts, bar graphs, and unstructured textual disclosures.
 
 ---
 
 ## 📌 Table of Contents
-- [Overview & Problem Statement](#-overview--problem-statement)
-- [Enterprise Use Case](#-enterprise-use-case)
-- [Key Features](#-key-features)
+- [Executive Overview & Problem Statement](#-executive-overview--problem-statement)
+- [Enterprise Use Case: Quantitative Analyst Workflow](#-enterprise-use-case-quantitative-analyst-workflow)
+- [Team Pod Roles & Ownership](#-team-pod-roles--ownership)
+- [Multi-Modal Vision Specialist Architecture (Deep Dive)](#-multi-modal-vision-specialist-architecture-deep-dive)
+  - [2A. VLM Prompt & Vision Extraction Pipeline](#2a-vlm-prompt--vision-extraction-pipeline)
+  - [2B. Visual Analytics & Multi-Modal Tool Integration](#2b-visual-analytics--multi-modal-tool-integration)
 - [System Architecture](#-system-architecture)
-- [Tech Stack](#-tech-stack)
+- [LangGraph Multi-Agent State Graph](#-langgraph-multi-agent-state-graph)
+- [API Reference (FastAPI Backend)](#-api-reference-fastapi-backend)
+- [Evaluation, Observability & Guardrails](#-evaluation-observability--guardrails)
 - [Repository Structure](#-repository-structure)
 - [Quickstart Guide](#-quickstart-guide)
-  - [Prerequisites](#prerequisites)
-  - [Environment Configuration](#environment-configuration)
-  - [Installation & Execution](#installation--execution)
-- [4-Week Development Plan](#-4-week-development-plan)
-- [Evaluation, Observability & Guardrails](#-evaluation-observability--guardrails)
+- [Running Automated Benchmarks & Tests](#-running-automated-benchmarks--tests)
 - [License](#-license)
 
 ---
 
-## 📖 Overview & Problem Statement
+## 📖 Executive Overview & Problem Statement
 
-Standard Retrieval-Augmented Generation (RAG) pipelines break down when applied to complex enterprise documents:
-1. **Multi-Modal Blindspots**: Conventional chunking strips out or garbles visual context such as balance sheet tables, trend charts, bar graphs, and diagrams.
-2. **Siloed Reasoning**: User queries frequently require cross-referencing unstructured document content with structured databases (e.g., historical stock prices or ERP records).
-3. **Single-Hop Limitations**: Standard vector search cannot perform multi-step planning, iterative query rewriting, or validation across diverse sources.
+Standard Retrieval-Augmented Generation (RAG) pipelines fail when applied to complex corporate annual reports and financial filings:
+1. **Multi-Modal Blindspots**: Naive text extraction strips out or mangles graphical data (quarterly revenue bar charts, margin progression curves, segment breakdowns, and financial statement tables).
+2. **Data Silos & Fragmented Reasoning**: Quantitative analysts must combine textual risk disclosures with structured market databases (historical stock prices, P/E multiples, 52-week highs/lows) and visual chart metrics.
+3. **Hallucination & Lack of Grounding**: Standard LLMs frequently generate fabricated growth rates or misattribute numbers from adjacent table cells when not grounded in source citations.
 
-**OmniBrain** solves these challenges by combining a **LangGraph-powered Supervisor Agent**, **Multi-Modal Vector Embeddings (CLIP + Text)**, **Vision-Language Models (VLM)**, and a **Text-to-SQL Agent** in an autonomous self-correcting loop.
+**OmniBrain** solves this with an agentic architecture:
+- **Supervisor Agent (LangGraph)**: Dynamically decomposes multi-hop research queries and routes sub-tasks across specialized agents.
+- **Multi-Modal Vision Specialist (GPT-4o / LLaVA)**: Extracts structured data from visual figures and tables, runs quantitative trend calculations (CAGR, YoY growth), and cross-references visual metrics against text context.
+- **Semantic RAG & Search Agent (Qdrant + Self-RAG)**: Retrieves vector chunks and autonomously loops to rewrite queries if retrieved context is insufficient.
+- **Text-to-SQL Agent (Gemini 1.5 Pro)**: Queries structured relational databases for market benchmarks, valuations, and trading multiples.
+- **Hallucination Guardrails & Telemetry (Langfuse)**: Enforces domain boundaries, prevents prompt leakage, and traces latency, token usage, and faithfulness down to the individual sub-agent level.
 
 ---
 
-## 💼 Enterprise Use Case
+## 💼 Enterprise Use Case: Quantitative Analyst Workflow
 
 ```text
-[500-Page Corporate Financial PDF]
-                │
-                ▼
-      ┌──────────────────┐
-      │    OmniBrain     │ ──► Dynamic Task Decomposition
-      │    Orchestrator  │
-      └──────────────────┘
-         │        │       │
-         ▼        ▼       ▼
-   [Text Vector] [VLM] [Text-to-SQL]
-         │        │       │
-         └────────┼───────┘
-                  │
-                  ▼
-   [Cited Investment Memo with Exact Page & Chart Evidence]
+       ┌─────────────────────────────────────────────────────────┐
+       │   500-Page Corporate Financial PDF (10-K / Annual)      │
+       └────────────────────────────┬────────────────────────────┘
+                                    │
+                                    ▼
+       ┌─────────────────────────────────────────────────────────┐
+       │             OmniBrain Ingestion Pipeline                │
+       │   • Text Chunker & Section Hierarchy Parser             │
+       │   • Embedded Image & Visual Figure Extractor            │
+       │   • Qdrant Vector Embeddings (Dense & Multimodal)       │
+       └────────────────────────────┬────────────────────────────┘
+                                    │
+                                    ▼
+       ┌─────────────────────────────────────────────────────────┐
+       │             LangGraph Supervisor Orchestrator           │
+       │   • Intent Classifier & Dynamic Query Routing           │
+       └──────┬─────────────────────┼─────────────────────┬──────┘
+              │                     │                     │
+              ▼                     ▼                     ▼
+   ┌────────────────────┐ ┌───────────────────┐ ┌───────────────────┐
+   │    Search Agent    │ │   Vision Agent    │ │     SQL Agent     │
+   │  • Semantic Search │ │ • VLM Extraction  │ │ • Text-to-SQL     │
+   │  • Self-RAG Loops  │ │ • Visual Analytics│ │ • P/E, Market Cap │
+   │  • Page Citations  │ │ • Cross-Modal Check│ │ • Stock Pricing  │
+   └──────────┬─────────┘ └─────────┬─────────┘ └─────────┬─────────┘
+              │                     │                     │
+              └─────────────────────┼─────────────────────┘
+                                    │
+                                    ▼
+       ┌─────────────────────────────────────────────────────────┐
+       │           Synthesizer & Verification Node               │
+       │   • Mathematical Derivatives (CAGR, YoY Growth, Trajectory)
+       │   • Cross-Modal Discrepancy & Hallucination Audit       │
+       │   • Cited Investment Research Memorandum Synthesis      │
+       └────────────────────────────┬────────────────────────────┘
+                                    │
+                                    ▼
+       ┌─────────────────────────────────────────────────────────┐
+       │   Executive Investment Memo + Visual Citation Overlays  │
+       └─────────────────────────────────────────────────────────┘
 ```
-
-**Scenario**: A quantitative analyst ingests a 500-page corporate financial report. 
-- The **Supervisor Agent** breaks the prompt into sub-tasks.
-- The **Vision Agent** extracts key performance indicators from embedded quarterly charts.
-- The **Search Agent** retrieves qualitative risk factors from semantic text chunks.
-- The **SQL Agent** queries historical trading and pricing data from a SQL database.
-- The agents collaboratively synthesize findings into an **investment memo with visual citations**, eliminating hallucinations through NeMo Guardrails and Self-RAG verification.
 
 ---
 
-## ✨ Key Features
+## 👥 Team Pod Roles & Ownership
 
-- 🤖 **LangGraph Supervisor Orchestration**: State-machine-based multi-agent coordination with specialized workers (Search, SQL, Vision).
-- 🖼️ **Multi-Modal Document Parsing**: Dual ingestion pipeline extracting text chunks, tables, and images/charts using CLIP embeddings and VLM reasoning (GPT-4o / LLaVA).
-- 🔄 **Self-Correction (Self-RAG / CRAG)**: Evaluates retrieval relevance; autonomously rewrites queries and re-fetches context if initial retrieval confidence is low.
-- 🛡️ **NeMo Safety Guardrails**: Domain-boundary enforcement to prevent prompt injection and out-of-domain hallucinations.
-- 📊 **Full-Stack Observability with Langfuse**: Real-time tracing of agent state transitions, token consumption, latency, and reasoning pathways.
-- 🖥️ **Interactive Streamlit UI**: Visualizes agent thought processes, step-by-step reasoning logs, and clickable image/page citation links.
+The project is structured into specialized engineering pods:
+
+### 🌟 The Agentic AI & Reasoning Pod
+- **Role 1: Lead Agentic Architect** — LangGraph state machine, state definitions (`AgentState`), memory management, and supervisor routing.
+- **Role 2: Multi-Modal Vision Specialist** *(Our Module)*:
+  - **2A: VLM Prompt & Vision Extraction Specialist**: Prompt engineering, system directives, image preprocessing, and structured JSON parsing (`ExtractedChartData`, `ExtractedTableData`) across GPT-4o, Ollama/LLaVA, and mock engines.
+  - **2B: Visual Analytics & Multi-Modal Tool Integrator**: Downstream mathematical reasoning (CAGR, YoY deltas, anomaly detection), cross-referencing visual numbers against text context, Self-RAG fact-checking loops, and investment memo block formatting.
+- **Role 3: RAG & Search Engineer** — Semantic vector retrieval, hybrid search pipelines, iterative Self-RAG query rewriting, and document citation mapping.
+
+### 🛡️ The Data, Safety & Full-Stack Pod
+- **Role 4: Multi-Modal Data Engineer** — Document ingestion, PyMuPDF parsing, text chunking, and multi-modal vector indexing in Qdrant.
+- **Role 5: AI Safety & Observability Lead** — Deterministic input/output rail enforcement, LLM evaluations, and distributed Langfuse tracing.
+- **Role 6: Full-Stack Integration Engineer** — FastAPI asynchronous backend services, modern Vite web frontend, and visual citation rendering.
+
+---
+
+## 🔬 Multi-Modal Vision Specialist Architecture (Deep Dive)
+
+```mermaid
+flowchart LR
+    subgraph Role 2A [VLM Prompt & Extraction Specialist]
+        IMG[Raw Figure / PDF Crop] --> PRE[Image Preprocessor]
+        PRE -->|Enhanced & Resized| VLM[VLM Engine: GPT-4o / LLaVA]
+        SYS[Prompt Templates] --> VLM
+        VLM --> JSON[Structured JSON: ExtractedChartData / ExtractedTableData]
+    end
+
+    subgraph Role 2B [Visual Analytics & Tool Integrator]
+        JSON --> VAE[Visual Analytics Engine: CAGR / YoY / Anomalies]
+        JSON --> CMV[Cross-Modal Verifier: Visual vs Text Grounding]
+        CMV <-->|Missing Metrics| SRAG[Cross-Modal Self-RAG Retrieval Loop]
+        VAE --> SYN[Visual Memo Formatter]
+        CMV --> SYN
+        SYN --> BLK[VisualAnalyticalMemoBlock]
+    end
+
+    BLK --> SUP[LangGraph Supervisor / Investment Memo]
+```
+
+### 2A. VLM Prompt & Vision Extraction Pipeline
+1. **Pydantic Vision Schemas** ([`app/models/vision_schemas.py`](file:///d:/omnibrain/app/models/vision_schemas.py)):
+   - `ChartType`: Categorization for Bar, Line, Pie, Area, Candlestick, Scatter, and Table exhibits.
+   - `ExtractedChartData`: Full metadata with series, labels, units, axes, summaries, and anomalies.
+   - `ExtractedTableData`: Matrices of column headers, row line items, scales, and currencies.
+   - `BoundingBox`: Normalized (0.0 to 1.0) and pixel-based bounding box coordinates.
+2. **Prompt Engineering** ([`agents/vision_prompts.py`](file:///d:/omnibrain/agents/vision_prompts.py)):
+   - `VISION_SYSTEM_PROMPT`: Zero-hallucination instructions enforcing exact number transcription, currency/scale recognition, and legend cross-referencing.
+   - `CHART_EXTRACTION_PROMPT` & `TABLE_EXTRACTION_PROMPT`: Enforces strict structured JSON extraction format.
+3. **Image Preprocessing** ([`app/services/image_preprocessor.py`](file:///d:/omnibrain/app/services/image_preprocessor.py)):
+   - Contrast and sharpness enhancement for fine financial text and faded axis labels.
+   - Sub-region cropping via bounding boxes.
+   - VLM tile token estimation (512x512 patches) to optimize API token budgets.
+4. **Modular VLM Engines** ([`app/services/vlm_engine.py`](file:///d:/omnibrain/app/services/vlm_engine.py)):
+   - `OpenAIVisionEngine`: GPT-4o multimodal API with JSON response format.
+   - `OllamaLLaVAEngine`: Local open-source inference (`llava:13b`, `llama-3.2-vision`).
+   - `MockVisionEngine`: Deterministic mock engine for offline unit testing and automated CI/CD benchmarks.
+
+### 2B. Visual Analytics & Multi-Modal Tool Integration
+1. **Quantitative Analytics Engine** ([`agents/visual_analytics.py`](file:///d:/omnibrain/agents/visual_analytics.py)):
+   - **CAGR Computation**: $\text{CAGR} = \left(\frac{V_{\text{final}}}{V_{\text{initial}}}\right)^{\frac{1}{N}} - 1$
+   - **Period-over-Period Deltas**: Sequential YoY/QoQ growth rates.
+   - **Statistical Anomaly Detection**: Flags sharp drops or spikes using $Z$-score and IQR thresholds.
+   - **Trajectory Classification**: `UPWARD`, `DOWNWARD`, `STABLE`, `VOLATILE`.
+2. **Cross-Modal Verification & Discrepancy Detection** ([`agents/cross_modal_verifier.py`](file:///d:/omnibrain/agents/cross_modal_verifier.py)):
+   - Cross-references visual numbers against textual claims with configurable tolerance (default $\pm 2.0\%$).
+   - Flags discrepancies by severity (`LOW`, `MEDIUM`, `HIGH`) to identify corporate reporting inconsistencies.
+3. **Cross-Modal Self-RAG Loop** ([`agents/cross_modal_self_rag.py`](file:///d:/omnibrain/agents/cross_modal_self_rag.py)):
+   - Rewrites search queries using extracted visual metric labels to retrieve targeted corroborating text chunks from Qdrant.
+4. **Visual Citation Overlay Renderer** ([`app/services/citation_renderer.py`](file:///d:/omnibrain/app/services/citation_renderer.py)):
+   - Generates visual bounding-box highlight overlays on source PDF pages and produces thumbnail snippets for UI drill-down.
 
 ---
 
@@ -84,54 +175,129 @@ Standard Retrieval-Augmented Generation (RAG) pipelines break down when applied 
 
 ```mermaid
 flowchart TD
-    User([User / Quantitative Analyst]) -->|Query / PDF Upload| UI[Streamlit Frontend]
-    UI -->|Async REST API| API[FastAPI Backend]
+    User([Analyst Query / PDF Upload]) --> UI[Vite Web Frontend]
+    UI --> API[FastAPI Backend]
     
     subgraph Guardrails & Observability
-        API --> NeMo[NeMo Guardrails: Input & Output Checks]
-        API -.-> Langfuse[Langfuse: Tracing & Metrics]
+        API --> Guardrails[Deterministic Guardrails: Input & Output Checks]
+        Guardrails --> Supervisor[Supervisor Agent]
+        API -.-> Langfuse[Langfuse: Traces, Latency & Token Usage]
     end
 
     subgraph Agentic Orchestrator [LangGraph State Machine]
-        NeMo --> Supervisor[Supervisor Agent]
+        Supervisor -->|Visual / Chart Query| VisionAgent[Multi-Modal Vision Specialist]
+        Supervisor -->|Unstructured Text Query| SearchAgent[Search Agent + Self-RAG]
+        Supervisor -->|Structured Stock Query| SQLAgent[Text-to-SQL Agent]
         
-        Supervisor -->|Unstructured Query| SearchAgent[Search Agent]
-        Supervisor -->|Visual / Chart Query| VisionAgent[Vision Agent / VLM]
-        Supervisor -->|Structured Query| SQLAgent[Text-to-SQL Agent]
-        
-        SearchAgent <-->|Self-Correction Loop| SelfRAG[Self-RAG Evaluator]
-        
-        SearchAgent --> Synthesizer[Synthesis & Verification Node]
-        VisionAgent --> Synthesizer
+        VisionAgent --> Synthesizer[Synthesizer Node]
+        SearchAgent --> Synthesizer
         SQLAgent --> Synthesizer
         
-        Synthesizer -->|Grounding Check| Supervisor
+        Synthesizer -->|Grounding Audit| Supervisor
     end
 
-    subgraph Data Stores
-        SearchAgent -->|Semantic Text & Image Embeddings| Qdrant[(Qdrant Vector DB)]
-        VisionAgent -->|Extracted Chart Images| ImageStore[(Document Image Store)]
-        SQLAgent -->|Tabular / Historical Data| SQLDB[(SQL Database)]
+    subgraph Data Silos
+        SearchAgent <--> Qdrant[(Qdrant Vector DB)]
+        VisionAgent <--> ImageStore[(Document Image Store)]
+        SQLAgent <--> SQLDB[(SQLite / PostgreSQL DB)]
     end
 
-    Synthesizer -->|Final Grounded Response + Citations| UI
+    Synthesizer -->|Cited Investment Memo| UI
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🧭 LangGraph Multi-Agent State Graph
 
-| Domain | Technology / Library | Purpose |
+The orchestration is implemented using LangGraph's cyclic `StateGraph` over a shared `AgentState`:
+
+```python
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    query: str
+    next_agent: Optional[str]
+    retrieved_docs: List[Dict[str, Any]]
+    visual_evidence: List[Dict[str, Any]]
+    referenced_images: List[str]
+    sql_query: Optional[str]
+    sql_results: Optional[List[Dict[str, Any]]]
+    is_grounded: bool
+    retrieval_confidence: float
+    iteration_count: int
+    final_response: Optional[str]
+    citations: List[Dict[str, Any]]
+```
+
+### Registered LangGraph Multi-Modal Tools ([`agents/visual_tools.py`](file:///d:/omnibrain/agents/visual_tools.py))
+- `verify_visual_numbers_against_text`: Cross-checks chart numbers against textual claims.
+- `compute_visual_figure_trends`: Computes CAGR, percentage deltas, and anomalies.
+- `compare_two_visual_figures`: Computes comparative variance analysis across 2 exhibits.
+- `generate_visual_citation_overlay_tool`: Produces bounding-box overlays for citations.
+- `format_visual_memo_section_tool`: Generates markdown analytical blocks for the memo.
+
+---
+
+## 📡 API Reference (FastAPI Backend)
+
+The FastAPI server (`app/main.py`) exposes modular endpoints for document ingestion, chat orchestration, and visual analytics:
+
+### 1. Visual Analytics & Extraction (`/api/v1/visual`)
+| Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| **Agent Orchestration** | [LangGraph](https://github.com/langchain-ai/langgraph), [LangChain](https://www.langchain.com/) | Cyclic state graphs, supervisor-worker routing, and memory |
-| **Multi-Modal Models** | GPT-4o / LLaVA, CLIP | Multimodal visual reasoning and cross-modal embedding |
-| **Vector Store** | [Qdrant](https://qdrant.tech/) / FAISS | High-performance vector similarity search (dense + multimodal) |
-| **Relational Database** | PostgreSQL / SQLite (SQLAlchemy) | Structured historical financial and stock data |
-| **Safety & Policy** | [NVIDIA NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) | Hallucination mitigation, topical rail enforcement |
-| **LLMOps & Tracing** | [Langfuse](https://langfuse.com/) | Trace tracking, latency/cost telemetry, and evaluation |
-| **Backend API** | [FastAPI](https://fastapi.tiangolo.com/), Uvicorn, Pydantic | Asynchronous document ingestion and agent query endpoints |
-| **Frontend UI** | [Streamlit](https://streamlit.io/) | Interactive analyst dashboard, thought-process visualization |
-| **Document Processing**| PyMuPDF, pdfplumber, Pillow | PDF parsing, table extraction, and image slicing |
+| `POST` | `/api/v1/visual/extract` | Direct visual extraction and multimodal reasoning over an image. |
+| `POST` | `/api/v1/visual/extract-chart` | Structured chart extraction returning `ExtractedChartData`. |
+| `POST` | `/api/v1/visual/extract-table` | Structured financial table extraction returning `ExtractedTableData`. |
+| `POST` | `/api/v1/visual/compute-trends` | Computes CAGR, YoY growth rates, and statistical anomalies. |
+| `POST` | `/api/v1/visual/verify-cross-modal` | Verifies visual figures against text context with discrepancy scoring. |
+| `POST` | `/api/v1/visual/compare-figures` | Variance analysis between two visual figures or periods. |
+| `POST` | `/api/v1/visual/format-memo-block` | Formats verified visual findings into an executive investment memo block. |
+| `POST` | `/api/v1/visual/render-overlay` | Renders a bounding-box citation highlight overlay image. |
+| `POST` | `/api/v1/visual/assets` | Saves and indexes visual figure assets with thumbnail generation. |
+| `GET` | `/api/v1/visual/assets/{doc_id}` | Lists all visual assets extracted for a given document. |
+| `GET` | `/api/v1/visual/tools` | Returns all registered LangGraph visual tools and schemas. |
+| `GET` | `/api/v1/visual/benchmark` | Runs automated multimodal accuracy and grounding benchmark tests. |
+
+### 2. Chat & Multi-Agent Orchestration (`/api/v1/chat`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/chat/query` | End-to-end multi-agent query execution across Vision, Search, and SQL with deterministic guardrails and distributed Langfuse tracing. |
+| `POST` | `/api/v1/chat/memo` | Synthesizes an executive-grade investment research memorandum. |
+
+### 3. Ingestion & System Health
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/workspace` | **OmniBrain Quant Workspace**: Interactive 3-panel quantitative research frontend. |
+| `POST` | `/api/v1/ingest/pdf` | Upload and ingest PDF documents (extracts text chunks and embedded visual figures). |
+| `GET` | `/health` | Health check and system readiness status. |
+
+---
+
+## 🖥️ User Interfaces & Quantitative Workspaces
+
+OmniBrain features a state-of-the-art **npm-based modern web frontend**:
+
+### 1. 🖥️ Modern Workspace (Vite + JS + CSS)
+Located in [`frontend/`](file:///d:/omnibrain/frontend/) with Vite HMR and reverse proxying to FastAPI:
+- **Run dev server**: `npm run dev` (starts on `http://localhost:5173`)
+- **Build production bundle**: `npm run build`
+- **Panel 1: Corpus & Multimodal Ingest**: Live status of OCR and vectorization for 10-K PDFs. Upload financial disclosures here.
+- **Panel 2: Swarm Orchestrator & Conversation Stream**: Real-time multi-agent routing filters, interactive query execution, and chat history retention via LangGraph `MemorySaver`.
+- **Panel 3: High-Salience Artifacts**: Dedicated extraction viewer rendering isolated charts and tables directly from the pipeline for verification.
+
+### 2. 🏛️ Built-in FastAPI Workspace Serving (`/workspace`)
+The compiled frontend is also served natively by FastAPI at `http://localhost:8000/workspace`.
+
+---
+
+## 🛡️ Evaluation, Observability & Guardrails
+
+- **Deterministic Guardrails** ([`guardrails/guardrail_service.py`](file:///d:/omnibrain/guardrails/guardrail_service.py)):
+  - **Input filtering**: Scans analyst queries for prohibited terminology (PII, off-topic domains).
+  - **Output grounding**: Rewrites final answers dynamically, enforcing disclaimers and refusing ungrounded requests.
+- **Langfuse Telemetry** ([`app/core/telemetry.py`](file:///d:/omnibrain/app/core/telemetry.py)):
+  - Records end-to-end traces, agent execution paths, prompt/completion token usage, and latencies.
+- **Multi-Modal RAG Evaluator** ([`eval/evaluator.py`](file:///d:/omnibrain/eval/evaluator.py)):
+  - Evaluates faithfulness, answer relevance, visual grounding, and hallucination scores.
 
 ---
 
@@ -140,165 +306,154 @@ flowchart TD
 ```text
 omnibrain/
 ├── app/
-│   ├── api/                     # FastAPI route handlers (ingestion, chat, health)
-│   ├── core/                    # App configuration, logging, and security
-│   ├── models/                  # Pydantic schemas and database models
-│   ├── services/                # Ingestion services, PDF parser, and chunkers
-│   └── main.py                  # FastAPI application entrypoint
+│   ├── api/
+│   │   ├── routes_chat.py            # LangGraph multi-agent chat endpoints
+│   │   ├── routes_ingest.py          # PDF parsing & document ingestion endpoints
+│   │   ├── routes_visual.py          # Visual extraction, analytics & benchmark endpoints
+│   │   └── routes_health.py          # Health check endpoint
+│   ├── core/
+│   │   ├── config.py                 # Pydantic application settings
+│   │   ├── logging.py                # Structured logging configuration
+│   │   └── telemetry.py              # Langfuse observability and tracing manager
+│   ├── models/
+│   │   ├── schemas.py                # Ingestion and standard API schemas
+│   │   ├── vision_schemas.py         # Validated Pydantic models for charts, tables & bboxes
+│   │   └── entities.py               # Document & chunk database entities
+│   ├── services/
+│   │   ├── image_preprocessor.py     # Resizing, contrast enhancement, crop & token budgeting
+│   │   ├── vlm_engine.py             # Multi-engine VLM providers (GPT-4o, LLaVA, Mock)
+│   │   ├── vision_service.py         # Unified structured chart/table extraction service
+│   │   ├── citation_renderer.py      # Bounding-box overlay generator & thumbnail cache
+│   │   ├── ingestion_service.py      # PDF parsing and image extraction pipeline
+│   │   ├── pdf_parser.py             # PyMuPDF text and image extraction
+│   │   └── chunking_service.py       # Recursive semantic text chunker
+│   └── main.py                       # FastAPI application entrypoint
 ├── agents/
-│   ├── supervisor.py            # LangGraph Supervisor Agent routing logic
-│   ├── search_agent.py          # Vector retrieval & Self-RAG query rewriter
-│   ├── vision_agent.py          # VLM chart/table extraction agent
-│   ├── sql_agent.py             # Text-to-SQL generator and executor
-│   └── state.py                 # LangGraph AgentState definitions
-├── guardrails/
-│   ├── config.yml               # NeMo Guardrails configuration
-│   └── rails/                   # Colang flow definitions (.co)
+│   ├── supervisor.py                 # LangGraph Supervisor Agent state machine
+│   ├── vision_agent.py               # Multi-Modal Vision Specialist agent & node
+│   ├── vision_prompts.py             # System prompts and extraction templates
+│   ├── visual_analytics.py           # Quantitative engine (CAGR, YoY growth, anomaly detection)
+│   ├── cross_modal_verifier.py       # Visual-to-text cross-referencing & discrepancy check
+│   ├── visual_comparator.py          # Multi-figure comparative analytics
+│   ├── cross_modal_self_rag.py       # Visual-guided Self-RAG fact-checking loop
+│   ├── visual_tools.py               # LangGraph @tool registry for visual analytics
+│   ├── multi_modal_bridge.py         # Bridge utilities connecting tools to supervisor
+│   ├── memo_synthesizer.py           # Investment research memorandum synthesizer
+│   ├── visual_routing_evaluator.py   # Intent classifier guiding supervisor routing
+│   ├── search_agent.py               # Semantic vector search & Self-RAG agent
+│   ├── sql_agent.py                  # Text-to-SQL agent for structured financial tables
+│   └── state.py                      # LangGraph shared AgentState definition
 ├── storage/
-│   ├── vector_store.py          # Qdrant client and collection manager
-│   ├── sql_db.py                # SQL database connection and schema
-│   └── image_store.py           # Extracted image/chart asset persistence
-├── ui/
-│   ├── app.py                   # Streamlit web application
-│   ├── components/              # UI widgets (citation viewer, thought trace)
-│   └── styles.css               # Streamlit custom styling
-├── tests/
-│   ├── test_ingestion.py        # PDF & image ingestion tests
-│   ├── test_agents.py           # LangGraph agent routing unit tests
-│   └── test_guardrails.py       # NeMo safety rails verification
-├── docker-compose.yml           # Multi-container setup (API, Qdrant, UI, Langfuse)
-├── Dockerfile                   # Application Docker image definition
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Environment variables template
-└── README.md                    # Project documentation
+│   ├── vector_store.py               # Qdrant client, dense embedder, and collection manager
+│   ├── sql_db.py                     # SQLite financial database connection and schema
+│   └── image_store.py                # Visual figure persistence and thumbnail cache
+├── guardrails/
+│   ├── guardrail_service.py          # Deterministic Guardrails policy service
+│   ├── config.yml                    # Guardrails configuration
+│   └── rails/                        # Colang security flow definitions
+├── eval/
+│   ├── evaluator.py                  # Multi-modal RAG faithfulness & grounding evaluator
+│   └── benchmark_runner.py           # Automated standalone benchmark suite
+├── tests/                            # Pytest Benchmark & Integration Suite
+├── requirements.txt                  # Python project dependencies
+├── .env.example                      # Environment variables template
+└── README.md                         # Project documentation
 ```
 
 ---
 
 ## 🚀 Quickstart Guide
 
-### Prerequisites
-- Python 3.10 or higher
-- [Docker & Docker Compose](https://www.docker.com/) (for Qdrant & Langfuse)
-- OpenAI API Key (or equivalent multimodal LLM provider)
+### 1. Prerequisites
+- Python 3.10+
+- [Docker](https://www.docker.com/) (optional, for Qdrant / Langfuse server)
 
-### Environment Configuration
-
-Clone the repository and copy the environment template:
+### 2. Environment Setup
 
 ```bash
-git clone https://github.com/your-org/omnibrain.git
-cd omnibrain
-cp .env.example .env
+git clone https://github.com/akhilcodi5/omnibrain-group2.git
+cd omnibrain-group2
+git checkout mallikarjun
 ```
 
-Populate the `.env` file with your credentials:
+> [!IMPORTANT]
+> **API Key Setup for Team Members:**
+> 1. Copy `.env.example` to create your private `.env` file (this file is excluded by `.gitignore` so your API key will **never** be committed or pushed to GitHub):
+>    ```bash
+>    cp .env.example .env
+>    ```
+> 2. Open `.env` and configure your preferred Vision-Language Model provider and your own API key:
+>
+>    ```env
+>    # Option A: Google Gemini (Recommended - Free keys at https://aistudio.google.com/)
+>    VLM_PROVIDER=gemini
+>    GEMINI_API_KEY=your_actual_gemini_api_key_here
+>    GEMINI_VISION_MODEL=gemini-flash-latest
+>
+>    # Option B: OpenAI GPT-4o
+>    VLM_PROVIDER=openai
+>    OPENAI_API_KEY=your_openai_api_key_here
+>    OPENAI_MODEL=gpt-4o
+>
+>    # Option C: Offline Mock Mode (Zero API keys needed - works 100% offline)
+>    VLM_PROVIDER=mock
+>    ```
+> 3. Each team member should provide their **own** Gemini or OpenAI API key in their local `.env` file. Never commit raw API keys to Git.
 
-```env
-# LLM & Vision Providers
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o
+### 3. Installation
 
-# Qdrant Vector Database
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_COLLECTION_NAME=omnibrain_docs
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux / macOS
+source venv/bin/activate
 
-# SQL Database
-DATABASE_URL=sqlite:///./storage/financial_data.db
-
-# Langfuse Observability
-LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
-LANGFUSE_SECRET_KEY=your_langfuse_secret_key
-LANGFUSE_HOST=https://cloud.langfuse.com
-
-# Application Settings
-BACKEND_HOST=0.0.0.0
-BACKEND_PORT=8000
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-### Installation & Execution
+### 4. Running the Application
 
-1. **Start Infrastructure Services (Qdrant & Langfuse)**:
-   ```bash
-   docker-compose up -d qdrant
-   ```
+**Start the NPM Modern Web Frontend (Vite)**:
+```bash
+npm run dev
+```
+- *Modern Web UI (HMR): `http://localhost:5173`*
 
-2. **Install Python Dependencies**:
-   ```bash
-   python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # Linux/macOS
-   source venv/bin/activate
+**Start the FastAPI Backend**:
+```bash
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+- *Quant Workspace (3-Panel UI): `http://localhost:8000/workspace`*
+- *Interactive API docs: `http://localhost:8000/docs`*
 
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
 
-3. **Launch the FastAPI Backend**:
-   ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-   *Interactive API docs available at `http://localhost:8000/docs`*
-
-4. **Launch the Streamlit Frontend**:
-   ```bash
-   streamlit run ui/app.py
-   ```
-   *Access the web UI at `http://localhost:8501`*
 
 ---
 
-## 📅 4-Week Development Plan
+## 🧪 Running Automated Benchmarks & Tests
 
+### Run Full Test Suite (77 Tests)
+
+```bash
+python -m pytest tests/ -v
 ```
-Week 1 ────────► Week 2 ────────► Mid-Project Review ────────► Week 3 ────────► Week 4 ────────► Final Review
-[Ingestion &     [Agent Graph     [Reasoning & Vision          [Self-RAG &      [Observability   [Production
- API Scaffold]    & Chat UI]       Audit]                       Guardrails]      & Citations]     System]
+
+### Run Standalone Multi-Modal Benchmark Suite
+```bash
+python eval/benchmark_runner.py
 ```
 
-### 🗓️ Week 1: Multi-Modal Ingestion & API Scaffolding
-- **AI Engineering**:
-  - Build PDF parsing pipeline extracting text, financial tables, and embedded images.
-  - Generate dual embeddings (text chunk embeddings + CLIP image embeddings).
-  - Store multi-modal vectors and metadata into Qdrant.
-- **Full-Stack Integration**:
-  - Build asynchronous FastAPI endpoints for document upload, processing status, and querying.
-
-### 🗓️ Week 2: Agentic Architecture & Dynamic UI
-- **AI Engineering**:
-  - Implement LangGraph state machine with a centralized `Supervisor` node.
-  - Implement specialized sub-agents: `SearchAgent`, `VisionAgent`, and `SQLAgent`.
-- **Full-Stack Integration**:
-  - Build Streamlit interface capable of streaming agent thought processes and displaying referenced charts alongside textual outputs.
-
-### 🔍 Mid-Project Review Checkpoints
-- [x] **Reasoning Audit**: Demonstrate the Supervisor correctly routes between vector search vs. SQL query execution based on prompt intent.
-- [x] **Vision Accuracy Check**: Verify the VLM extracts accurate numerical values from financial bar charts and data tables.
-
-### 🗓️ Week 3: Self-Correction Loop & NeMo Guardrails
-- **AI Engineering**:
-  - Implement **Self-RAG** mechanism: evaluate retrieval relevance, detect insufficient context, and autonomously trigger query rewrites.
-- **Full-Stack Integration**:
-  - Configure **NeMo Guardrails** to restrict answers strictly to the scope of ingested documents and block off-topic queries.
-
-### 🗓️ Week 4: Observability, Evaluation & Citation UI
-- **AI Engineering**:
-  - Integrate **Langfuse** for end-to-end trace logging, latency tracking, and token usage telemetry.
-- **Full-Stack Integration**:
-  - Refine Streamlit UI with interactive citation links enabling analysts to click claims and preview exact PDF pages and chart figures.
-
-### 🏁 Final Milestone
-- Deliver a production-ready, resilient, hallucination-resistant enterprise search and analytical memo generator.
-
----
-
-## 🛡️ Evaluation, Observability & Guardrails
-
-- **Grounding Verification**: Synthesizer node evaluates generated responses against retrieved context before presenting them to the user.
-- **Topical Rails**: NeMo Guardrails configuration enforces domain adherence and suppresses prompt leakage.
-- **Telemetry & Tracing**: All LangGraph state transitions and LLM calls are traced in Langfuse for real-time debugging and evaluation.
+**Benchmark Output**:
+```json
+{
+  "total_test_cases": 2,
+  "passed_test_cases": 2,
+  "pass_rate_percentage": 100.0,
+  "benchmark_status": "PASSED"
+}
+```
 
 ---
 

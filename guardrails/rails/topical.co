@@ -1,0 +1,14 @@
+# Colang definitions for topical and safety guardrails
+
+define user ask off topic
+  "What is the weather in Paris?"
+  "Tell me a joke"
+  "Who won the soccer match?"
+  "How do I cook pasta?"
+
+define flow check off topic
+  user ask off topic
+  bot refuse off topic
+
+define bot refuse off topic
+  "I am OmniBrain, an agentic multi-modal research assistant specialized in document and financial analysis. I can only assist with questions related to your uploaded documents and structured financial data."

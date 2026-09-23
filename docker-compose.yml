@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  # Vector Database: Qdrant
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: omnibrain_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+
+  # Backend: FastAPI
+  api:
+    build: .
+    container_name: omnibrain_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - qdrant
+
+  # Frontend: Streamlit
+  ui:
+    build: .
+    container_name: omnibrain_ui
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    command: streamlit run ui/app.py --server.port=8501 --server.address=0.0.0.0
+    depends_on:
+      - api
+
+volumes:
+  qdrant_storage:
