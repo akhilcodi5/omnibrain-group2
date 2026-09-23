@@ -79,7 +79,8 @@ class HybridRetriever:
             return []
         try:
             values = search(query, metadata_filter=metadata_filter)
-        except TypeError:
+            if metadata_filter is not None:
+                return []
             values = search(query)
         except Exception:
             return []
