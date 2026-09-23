@@ -149,9 +149,10 @@ def validate_citations(candidates: Iterable[Mapping[str, Any]],
     """Only return citations backed by the current retrieved evidence."""
     evidence = {chunk.key: chunk for chunk in context}
     valid, seen = [], set()
-    for candidate in candidates:
+    for candidate in candidates or ():
+        if not isinstance(candidate, Mapping):
+            continue
         key = (str(candidate.get("document_id", "")), str(candidate.get("chunk_id", "")))
-        chunk = evidence.get(key)
         if not chunk:
             continue
         page = candidate.get("page_number")
