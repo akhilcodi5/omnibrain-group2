@@ -48,32 +48,56 @@ class BaseVisionEngine(abc.ABC):
 
 
 def _clean_and_parse_json(content: str) -> Dict[str, Any]:
-    """Safely extracts and parses JSON from VLM output, handling markdown blocks and bracket boundaries."""
+    """Safely extracts and parses JSON from VLM output, handling markdown blocks, trailing tokens, and bracket boundaries."""
     if not content or not content.strip():
         return {}
     cleaned = content.strip()
-    # Strip markdown code fencing if present
-    if cleaned.startswith("```"):
-        lines = cleaned.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
+
+    # 1. Regex search for markdown fenced JSON blocks
+    import re
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except Exception:
+            pass
+
+    # 2. Strip markdown code fencing if at boundaries
+    if "```" in cleaned:
+        lines = []
+        for line in cleaned.splitlines():
+            if line.strip().startswith("```"):
+                continue
+            lines.append(line)
         cleaned = "\n".join(lines).strip()
 
     try:
         return json.loads(cleaned)
     except (json.JSONDecodeError, TypeError):
-        # Fallback to finding outermost JSON object brackets
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start != -1 and end != -1 and start < end:
+        pass
+
+    # 3. Fallback to finding outermost JSON object brackets
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and start < end:
+        try:
+            return json.loads(cleaned[start:end + 1])
+        except Exception as e:
+            logger.debug(f"Outermost bracket JSON parse fallback failed: {e}")
+
+    # 4. If partially truncated JSON, attempt auto-repair by closing open strings and structures
+    if start != -1:
+        truncated_candidate = cleaned[start:]
+        for suffix in ["\"}]}", "\"}]}}", "\"}", "}]}", "}}", "}"]:
             try:
-                return json.loads(cleaned[start:end + 1])
-            except Exception as e:
-                logger.debug(f"Outermost bracket JSON parse fallback failed: {e}")
-        logger.error(f"Failed to parse valid JSON from VLM output: {content[:200]}")
-        return {"raw_text": content, "error": "Invalid JSON response"}
+                repaired = json.loads(truncated_candidate + suffix)
+                logger.info("Successfully recovered partially truncated VLM JSON output.")
+                return repaired
+            except Exception:
+                continue
+
+    logger.warning(f"Could not parse valid JSON from VLM output (fallback used): {content[:150]}")
+    return {"raw_text": content, "error": "Invalid JSON response"}
 
 
 class OpenAIVisionEngine(BaseVisionEngine):
