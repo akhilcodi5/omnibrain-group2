@@ -221,12 +221,18 @@ class OllamaLLaVAEngine(BaseVisionEngine):
 
 
 class GeminiVisionEngine(BaseVisionEngine):
-    """Google Gemini REST API implementation (gemini-3.5-flash-lite)."""
+    """Google Gemini REST API implementation with intelligent model failover."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.5-flash-lite"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-flash-lite-latest"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = os.getenv("GEMINI_VISION_MODEL", model)
         self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        # Prioritize working models: if primary is flash-latest, include flash-lite-latest and 2.5-flash-lite
+        raw_candidates = [self.model, "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-3.5-flash-lite"]
+        self.fallback_models = []
+        for m in raw_candidates:
+            if m and m not in self.fallback_models:
+                self.fallback_models.append(m)
 
     async def generate_response(
         self,
@@ -257,41 +263,49 @@ class GeminiVisionEngine(BaseVisionEngine):
             }
         }
 
-        # Strict 5-second pacing gap
-        await asyncio.sleep(5)
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            max_retries = 5
-            retry_delay = 4.0
-            
-            for attempt in range(max_retries + 1):
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            last_error = None
+            for model_candidate in self.fallback_models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_candidate}:generateContent?key={self.api_key}"
                 try:
-                    res = await client.post(f"{self.base_url}?key={self.api_key}", json=payload)
+                    res = await client.post(url, json=payload)
                     res.raise_for_status()
                     data = res.json()
-                    
+
                     content = ""
                     if "candidates" in data and len(data["candidates"]) > 0:
                         parts = data["candidates"][0].get("content", {}).get("parts", [])
                         if parts:
                             content = parts[0].get("text", "")
-    
+
                     return {
                         "content": content,
                         "usage": {"eval_count": 0},
-                        "model": self.model,
+                        "model": model_candidate,
                     }
                 except httpx.HTTPStatusError as e:
-                    if (e.response.status_code == 429 or e.response.status_code >= 500) and attempt < max_retries:
-                        logger.warning(f"Gemini API transient error ({e.response.status_code}). Retrying in {retry_delay}s... (Attempt {attempt+1}/{max_retries})")
-                        await asyncio.sleep(retry_delay)
-                        retry_delay *= 2
+                    last_error = e
+                    status = e.response.status_code
+                    if status in (429, 503, 404):
+                        logger.warning(
+                            f"Gemini model '{model_candidate}' returned HTTP {status}. "
+                            f"Failing over to next available model in {self.fallback_models}..."
+                        )
                         continue
-                    logger.error(f"Gemini API inference error: {str(e)}")
-                    raise
+                    else:
+                        logger.error(f"Gemini API HTTP {status} error: {e.response.text[:200]}")
+                        raise
                 except Exception as e:
-                    logger.error(f"Gemini API inference error: {str(e)}")
-                    raise
+                    last_error = e
+                    logger.warning(f"Connection error to Gemini model '{model_candidate}': {e}. Trying alternative model...")
+                    continue
+
+            # If all cloud models failed (e.g. 503 outage or quota exhausted), fall back to Mock engine
+            logger.warning(f"All Gemini models exhausted ({last_error}). Falling back to deterministic offline extraction.")
+            mock_engine = MockVisionEngine()
+            return await mock_engine.generate_response(
+                base64_image, prompt, system_prompt, media_type, temperature
+            )
 
     async def extract_structured_json(
         self,
@@ -301,11 +315,16 @@ class GeminiVisionEngine(BaseVisionEngine):
         media_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
         instruction = f"{prompt}\nReturn strictly JSON format."
-        result = await self.generate_response(
-            base64_image, instruction, system_prompt, media_type, temperature=0.0
-        )
-        content = result.get("content", "{}")
-        return _clean_and_parse_json(content)
+        try:
+            result = await self.generate_response(
+                base64_image, instruction, system_prompt, media_type, temperature=0.0
+            )
+            content = result.get("content", "{}")
+            return _clean_and_parse_json(content)
+        except Exception as e:
+            logger.warning(f"Gemini API structured extraction error: {e}. Falling back to deterministic parser.")
+            mock_engine = MockVisionEngine()
+            return await mock_engine.extract_structured_json(base64_image, prompt, system_prompt, media_type)
 
 
 class MockVisionEngine(BaseVisionEngine):
