@@ -72,6 +72,12 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     logger.info("Executing synthesizer_node in LangGraph...")
     
     query = state.get("query", "")
+    messages = state.get("messages", [])
+    for m in messages:
+        if getattr(m, "type", "") == "human" or m.__class__.__name__ == "HumanMessage":
+            query = getattr(m, "content", query)
+            break
+
     raw_visual_evidence = state.get("visual_evidence", [])
     retrieved_docs = state.get("retrieved_docs", [])
     sql_results = state.get("sql_results", [])
@@ -97,6 +103,14 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
         pdf_name = retrieved_docs[0].get("pdf_name", "")
         if pdf_name:
             company_name = os.path.splitext(os.path.basename(pdf_name))[0].strip()
+
+    c_lower = company_name.lower()
+    if "nvidia" in c_lower or "nvda" in c_lower:
+        company_name = "NVIDIA Corporation (NVDA)"
+    elif "apple" in c_lower or "aapl" in c_lower:
+        company_name = "Apple Inc. (AAPL)"
+    elif "microsoft" in c_lower or "msft" in c_lower:
+        company_name = "Microsoft Corporation (MSFT)"
 
     # Synthesize Final Investment Memo
     start_time = time.time()
@@ -128,9 +142,19 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
         name="Synthesizer",
     )
 
+    # Assess overall grounding from verified evidence blocks
+    overall_grounded = state.get("is_grounded", True)
+    if visual_blocks:
+        has_critical = any(
+            b.verification_report and b.verification_report.critical_discrepancies
+            for b in visual_blocks
+        )
+        overall_grounded = not has_critical
+
     return {
         "messages": [ai_msg],
         "final_response": final_memo,
+        "is_grounded": overall_grounded,
         "next_agent": "END",
     }
 

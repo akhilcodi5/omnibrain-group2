@@ -72,10 +72,16 @@ class SearchAgent:
         retrieved_docs = []
         citations = []
         total_score = 0.0
+        seen_snippets = set()
 
         for hit in hits:
             chunk_id = hit.get("chunk_id", "")
             text = hit.get("text", "")
+            norm_key = " ".join(text.split())[:75].lower()
+            if norm_key in seen_snippets:
+                continue
+            seen_snippets.add(norm_key)
+
             score = hit.get("score", 0.0)
             pdf_name = hit.get("pdf_name", "unknown.pdf")
             page_number = hit.get("page_number", 1)

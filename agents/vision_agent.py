@@ -278,10 +278,11 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             if match:
                 img_page = int(match.group(1))
 
+            img_context = f"{query} (Document: {pdf_name})" if pdf_name else query
             memo_block = await agent.analyze_and_verify_figure(
                 image_input=img_path,
                 text_context=text_context if text_context else None,
-                query_context=query,
+                query_context=img_context,
                 page_number=img_page,
             )
             memo_blocks.append(memo_block)
