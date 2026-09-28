@@ -88,12 +88,14 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     text_snippets = [d.get("text", "") for d in retrieved_docs if isinstance(d, dict)]
     sql_dict = sql_results[0] if sql_results and isinstance(sql_results, list) else None
 
-    # Extract company name from metadata
-    company_name = "Target Enterprise Entity"
-    if retrieved_docs and isinstance(retrieved_docs, list) and isinstance(retrieved_docs[0], dict):
+    # Extract company name from state or metadata
+    company_name = state.get("pdf_name") or "Target Enterprise Entity"
+    import os
+    if company_name and company_name != "Target Enterprise Entity":
+        company_name = os.path.splitext(os.path.basename(company_name))[0].strip()
+    elif retrieved_docs and isinstance(retrieved_docs, list) and isinstance(retrieved_docs[0], dict):
         pdf_name = retrieved_docs[0].get("pdf_name", "")
         if pdf_name:
-            import os
             company_name = os.path.splitext(os.path.basename(pdf_name))[0].strip()
 
     # Synthesize Final Investment Memo

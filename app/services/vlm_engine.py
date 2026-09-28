@@ -247,9 +247,9 @@ class OllamaLLaVAEngine(BaseVisionEngine):
 class GeminiVisionEngine(BaseVisionEngine):
     """Google Gemini REST API implementation with intelligent model failover."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-flash-lite-latest"):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model = os.getenv("GEMINI_VISION_MODEL", model)
+        self.model = model or os.getenv("GEMINI_VISION_MODEL", "gemini-flash-lite-latest")
         self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
         # Prioritize working models: if primary is flash-latest, include flash-lite-latest and 2.5-flash-lite
         raw_candidates = [self.model, "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-3.5-flash-lite"]

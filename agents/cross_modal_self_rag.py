@@ -53,6 +53,7 @@ class CrossModalSelfRAG:
         original_query: str,
         initial_text_context: Optional[str] = None,
         max_search_iterations: int = 3,
+        pdf_name: Optional[str] = None,
     ) -> CrossModalVerificationReport:
         """Run iterative Self-RAG loop:
         1. Attempt verification with initial text context.
@@ -79,11 +80,12 @@ class CrossModalSelfRAG:
 
         # Iterative visual query rewrite and retrieval
         targeted_queries = self.generate_targeted_search_queries(chart_data, original_query)
-        logger.info(f"CrossModalSelfRAG executing {len(targeted_queries)} targeted vector searches...")
+        logger.info(f"CrossModalSelfRAG executing {len(targeted_queries)} targeted vector searches (pdf_name: '{pdf_name}')...")
 
+        filter_meta = {"pdf_name": pdf_name} if pdf_name else None
         new_chunks = []
         for q in targeted_queries[:max_search_iterations]:
-            hits = self.vector_store.similarity_search(query=q, top_k=3)
+            hits = self.vector_store.similarity_search(query=q, top_k=3, filter_metadata=filter_meta)
             for hit in hits:
                 chunk_text = hit.get("text", "")
                 if chunk_text and chunk_text not in accumulated_text:
@@ -100,6 +102,7 @@ def cross_modal_self_rag_node(state: AgentState) -> Dict[str, Any]:
     logger.info("Executing cross_modal_self_rag_node in LangGraph workflow...")
 
     query = state.get("query", "")
+    pdf_name = state.get("pdf_name")
     visual_evidence = state.get("visual_evidence", [])
     retrieved_docs = state.get("retrieved_docs", [])
 
@@ -119,6 +122,7 @@ def cross_modal_self_rag_node(state: AgentState) -> Dict[str, Any]:
                     chart_data=chart_data,
                     original_query=query,
                     initial_text_context=text_context,
+                    pdf_name=pdf_name,
                 )
                 ev["verification_report"] = report.model_dump()
                 total_grounding = report.grounding_score

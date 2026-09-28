@@ -127,11 +127,24 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
 
     vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     trace_id = state.get("trace_id")
-    logger.info(f"Executing search_agent_node for query: '{query}'")
+    pdf_name = state.get("pdf_name")
+    logger.info(f"Executing search_agent_node for query: '{query}' (pdf_name: '{pdf_name}')")
     
     start_time = time.time()
     agent = SearchAgent(vector_store=vector_store)
-    result = agent.execute_search(query=query, top_k=5)
+    result = agent.execute_search(query=query, top_k=5, pdf_name_filter=pdf_name)
+    
+    # If strict filter returned empty but we have an active pdf_name, check for matching base token
+    if not result.get("retrieved_docs") and pdf_name:
+        unfiltered = agent.execute_search(query=query, top_k=8)
+        import os
+        base_token = os.path.splitext(os.path.basename(pdf_name))[0].replace(" ", "_").lower()
+        matched = [d for d in unfiltered.get("retrieved_docs", []) if base_token in d.get("pdf_name", "").lower()]
+        if matched:
+            result["retrieved_docs"] = matched
+            result["citations"] = [c for c in unfiltered.get("citations", []) if base_token in c.get("pdf_name", "").lower()]
+            result["summary"] = f"Retrieved {len(matched)} relevant chunks scoped to '{pdf_name}'."
+            
     elapsed = time.time() - start_time
 
     summary_text = result["summary"]
