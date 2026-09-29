@@ -192,28 +192,74 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     agent = VisualAnalyticsIntegratorAgent(vector_store=vector_store)
     query = state.get("query", "")
+    pdf_name = state.get("pdf_name")
     referenced_images: List[str] = state.get("referenced_images", [])
     current_evidence: List[Dict[str, Any]] = state.get("visual_evidence", [])
     retrieved_docs: List[Dict[str, Any]] = state.get("retrieved_docs", [])
+
+    # 1. Document-Level Isolation: Retain only images originating from the active PDF
+    if pdf_name and referenced_images:
+        clean_doc = os.path.splitext(os.path.basename(pdf_name))[0].replace(" ", "_").lower()
+        scoped = [img for img in referenced_images if clean_doc in img.lower()]
+        if scoped:
+            referenced_images = scoped
+        else:
+            # If active PDF is specified but has no matching images, do not use old PDF images
+            referenced_images = []
+
+    # 2. Smart Relevance & Chart Prioritization
+    q_lower = query.lower()
+    is_chart_query = any(k in q_lower for k in ["bar chart", "chart", "graph", "plot", "figure", "visual", "cagr", "trajectory"])
     
-    # Filter contextually relevant images using RAG retrieved documents' page numbers
-    if retrieved_docs and referenced_images:
-        relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
-        if relevant_pages:
-            filtered_images = []
-            for img in referenced_images:
-                if isinstance(img, str):
+    if referenced_images:
+        # Separate charts from tables and general images
+        chart_images = [img for img in referenced_images if "chart_" in os.path.basename(img).lower()]
+        table_images = [img for img in referenced_images if "table_" in os.path.basename(img).lower()]
+        other_images = [img for img in referenced_images if img not in chart_images and img not in table_images]
+
+        if is_chart_query and chart_images:
+            # Prioritize genuine charts over data tables
+            referenced_images = chart_images + table_images
+        elif "table" in q_lower and table_images:
+            referenced_images = table_images + chart_images
+
+        # Filter by relevant pages from retrieved text docs if available
+        if retrieved_docs:
+            relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
+            if relevant_pages:
+                page_matched = []
+                for img in referenced_images:
                     match = re.search(r'_p(\d+)_', img)
-                    if match:
-                        img_page = int(match.group(1))
-                        if img_page in relevant_pages:
-                            filtered_images.append(img)
-                            continue
-                filtered_images.append(img)
-            
-            if filtered_images:
-                logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
-                referenced_images = filtered_images
+                    if match and int(match.group(1)) in relevant_pages:
+                        page_matched.append(img)
+                if page_matched:
+                    referenced_images = page_matched
+
+        # Concurrency & Rate Limit Safety: Limit to top 2 most relevant visual figures
+        referenced_images = referenced_images[:2]
+
+    # 3. Graceful Absence Handling: If a visual chart was requested but none exist in the active document
+    if is_chart_query and not referenced_images:
+        doc_label = os.path.basename(pdf_name) if pdf_name else "the uploaded document"
+        notice_content = (
+            f"**[Visual Analytics Notice]**\n\n"
+            f"⚠️ **No Financial Bar Charts Detected**: No quarterly revenue bar charts or visual financial exhibits "
+            f"were found in `{doc_label}`.\n\n"
+            f"- **Active Document**: `{doc_label}`\n"
+            f"- **Guidance**: To extract numerical figures from bar charts, calculate CAGR, and assess YoY trajectories, "
+            f"please upload a corporate financial PDF (such as a 10-K filing or quarterly earnings release with embedded charts)."
+        )
+        ai_message = AIMessage(
+            content=notice_content,
+            name="VisualAnalyticsIntegratorAgent"
+        )
+        return {
+            "messages": [ai_message],
+            "visual_evidence": current_evidence,
+            "citations": state.get("citations", []),
+            "is_grounded": True,
+            "next_agent": "Supervisor",
+        }
 
     # Aggregate text context from retrieved documents
     text_context = " ".join([
@@ -225,24 +271,6 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
     memo_blocks: List[VisualAnalyticalMemoBlock] = []
     citations = []
 
-    # Filter contextually relevant images using RAG retrieved documents' page numbers
-    if retrieved_docs and referenced_images:
-        relevant_pages = {doc.get("page_number") for doc in retrieved_docs if doc.get("page_number") is not None}
-        if relevant_pages:
-            filtered_images = []
-            for img in referenced_images:
-                match = re.search(r'_p(\d+)_', img)
-                if match:
-                    img_page = int(match.group(1))
-                    if img_page in relevant_pages:
-                        filtered_images.append(img)
-                else:
-                    # Keep images if we cannot parse their page number
-                    filtered_images.append(img)
-            
-            logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
-            referenced_images = filtered_images
-
     if referenced_images:
         for idx, img_path in enumerate(referenced_images):
             img_page = idx + 1
@@ -250,10 +278,11 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             if match:
                 img_page = int(match.group(1))
 
+            img_context = f"{query} (Document: {pdf_name})" if pdf_name else query
             memo_block = await agent.analyze_and_verify_figure(
                 image_input=img_path,
                 text_context=text_context if text_context else None,
-                query_context=query,
+                query_context=img_context,
                 page_number=img_page,
             )
             memo_blocks.append(memo_block)
@@ -263,16 +292,10 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
                 "grounding_score": memo_block.verification_report.grounding_score if memo_block.verification_report else 1.0,
             })
     else:
-        logger.info("Vision node called with query context (no explicit image paths attached).")
-        memo_block = await agent.analyze_and_verify_figure(
-            image_input="sample_figure",
-            text_context=text_context if text_context else None,
-            query_context=query,
-        )
-        memo_blocks.append(memo_block)
+        logger.info("Vision node called without referenced image paths.")
 
     # Format synthesized message for LangGraph supervisor
-    formatted_sections = "\n\n---\n\n".join([b.markdown_formatted_block for b in memo_blocks])
+    formatted_sections = "\n\n---\n\n".join([b.markdown_formatted_block for b in memo_blocks]) if memo_blocks else "No visual figures processed."
     ai_message = AIMessage(
         content=f"**[Visual Analytics & Multi-Modal Integration Report]**\n\n{formatted_sections}",
         name="VisualAnalyticsIntegratorAgent"

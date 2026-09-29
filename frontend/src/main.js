@@ -4,6 +4,7 @@ import { marked } from 'marked';
 
 let latestMemoMarkdown = 'No memo generated yet.';
 let currentUploadedImages = [];
+let currentUploadedPdfName = null;
 
 // Global Toast System
 export function showToast(msg, durationMs = 3000) {
@@ -192,6 +193,7 @@ export async function handleFileUpload(event) {
       document.getElementById('active-doc-pages').textContent = `(${data.total_pages || 1} pgs)`;
       document.getElementById('doc-card-title').textContent = file.name;
       document.getElementById('doc-card-pgcount').textContent = `${data.total_pages || 1} Pgs`;
+      currentUploadedPdfName = file.name;
       currentUploadedImages = data.extracted_image_paths || [];
       const artifactContainer = document.getElementById('artifact-cards-wrapper');
       
@@ -309,6 +311,7 @@ export async function executeAnalystQuery() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         query: query, 
+        pdf_name: currentUploadedPdfName,
         referenced_images: currentUploadedImages,
         thread_id: sessionId
       }),
