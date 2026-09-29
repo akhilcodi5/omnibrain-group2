@@ -244,14 +244,38 @@ export async function handleFileUpload(event) {
         `✅ Ingestion complete: ${data.chunks_indexed ?? data.total_chunks ?? 0} chunks & ${data.images_extracted ?? data.total_images ?? 0} figures indexed!`
       );
     } else {
-      if (activeBadge) activeBadge.textContent = 'Simulated';
-      showToast(`Parsed ${file.name} into local sandbox.`);
+      const errText = await res.text();
+      if (activeBadge) activeBadge.textContent = 'Upload Failed';
+      showToast(`Error uploading: ${res.status} ${errText}`);
     }
   } catch (err) {
-    if (activeBadge) activeBadge.textContent = 'Active (Local)';
-    showToast(`Loaded ${file.name} into Quant Workspace.`);
+    if (activeBadge) activeBadge.textContent = 'Error';
+    showToast(`Upload failed: ${err.message}`);
   }
 }
+
+// Drag and Drop support
+document.addEventListener('DOMContentLoaded', () => {
+  const dropZone = document.getElementById('pdf-file-input')?.closest('label');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('bg-surface-container');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('bg-surface-container');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('bg-surface-container');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        document.getElementById('pdf-file-input').files = e.dataTransfer.files;
+        handleFileUpload({ target: { files: e.dataTransfer.files } });
+      }
+    });
+  }
+});
 
 const sessionId = crypto.randomUUID();
 
