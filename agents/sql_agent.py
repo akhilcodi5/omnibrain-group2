@@ -40,15 +40,17 @@ class SQLAgent:
         """Map user query intent to SQL query using Gemini LLM."""
         if self.use_mock:
             return self._fallback_rule_sql(query)
-        import httpx
+        import google.generativeai as genai
         import os
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
+            logger.warning("GEMINI_API_KEY not found. Falling back to simple rule engine.")
             return self._fallback_rule_sql(query)
 
         try:
+            genai.configure(api_key=api_key)
             model_name = os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            model = genai.GenerativeModel(model_name)
             
             schema = '''
             Table: stocks
@@ -69,19 +71,9 @@ class SQLAgent:
             Question: {query}
             '''
 
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 256}
-            }
-
-            with httpx.Client(timeout=4.0) as client:
-                res = client.post(url, json=payload)
-                res.raise_for_status()
-                data = res.json()
-                content = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-
+            response = model.generate_content(prompt)
+            sql = response.text.strip()
             # Clean up potential markdown formatting
-            sql = content
             if sql.startswith("```sql"):
                 sql = sql[6:]
             if sql.startswith("```"):
@@ -89,9 +81,9 @@ class SQLAgent:
             if sql.endswith("```"):
                 sql = sql[:-3]
             
-            return sql.strip() if sql.strip() else self._fallback_rule_sql(query)
+            return sql.strip()
         except Exception as e:
-            logger.warning(f"Gemini SQL generation fallback used: {e}")
+            logger.error(f"Gemini SQL generation error: {e}")
             return self._fallback_rule_sql(query)
 
     def execute(self, query: str) -> Dict[str, Any]:

@@ -1,8 +1,6 @@
 """Agent query and chat endpoints for LangGraph supervisor orchestration with NeMo Guardrails and Langfuse Telemetry."""
 
 import logging
-import os
-import re
 import time
 import urllib.parse
 from typing import Any, Dict, List, Optional
@@ -109,27 +107,9 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
             else:
                 local_images.append(img)
 
-        # Document-Level Isolation: Determine active pdf_name and scope images
-        pdf_name = req.pdf_name
-        if not pdf_name and local_images:
-            for img in local_images:
-                match = re.search(r'(?:chart|table|img)_([A-Za-z0-9_\-]+?)_p\d+', img)
-                if match:
-                    pdf_name = match.group(1) + ".pdf"
-                    break
-
-        if pdf_name:
-            clean_token = os.path.splitext(os.path.basename(pdf_name))[0].replace(" ", "_").lower()
-            # Retain only images originating from the active PDF document
-            scoped_images = [img for img in local_images if clean_token in img.lower()]
-            if scoped_images:
-                local_images = scoped_images
-            logger.info(f"Scoped {len(local_images)} images to active document: '{pdf_name}'")
-
         initial_state = {
             "messages": [],
             "query": req.query,
-            "pdf_name": pdf_name,
             "next_agent": None,
             "retrieved_docs": [],
             "visual_evidence": [],

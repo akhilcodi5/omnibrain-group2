@@ -131,47 +131,8 @@
 <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide" id="active-doc-badge">Processed</span>
 </div>
 </div>
-<!-- Right Section: Model & Agent Stack Architecture Badges -->
-<div class="flex items-center gap-3">
-  <!-- Interactive Model Architecture Pills -->
-  <div class="hidden lg:flex items-center bg-surface-container-low border border-outline-variant/40 rounded-xl p-1 gap-1 text-[11px] font-label shadow-xs">
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="Supervisor Node: Dynamic multi-agent routing with hard loop safety ceiling (agents/supervisor.py)">
-      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-      <span class="font-semibold text-secondary">Router:</span>
-      <span class="font-bold text-primary">LangGraph</span>
-    </div>
+<!-- Navigation Links & Meta Info -->
 
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="VisionAgent: Structured chart JSON extraction, CAGR & YoY trend modeling (gemini-flash-lite-latest / GPT-4o)">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-      <span class="font-semibold text-secondary">Vision:</span>
-      <span class="font-bold text-emerald-700">Gemini / GPT-4o</span>
-    </div>
-
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="SearchAgent & Self-RAG: Dense vector search over 500-token chunks with context grading & query rewriting">
-      <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-      <span class="font-semibold text-secondary">Vector RAG:</span>
-      <span class="font-bold text-blue-700">Qdrant</span>
-    </div>
-
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="SQLAgent: Text-to-SQL engine resolving stock pricing, P/E multiples, and market cap metrics">
-      <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-      <span class="font-semibold text-secondary">SQL:</span>
-      <span class="font-bold text-purple-700">Text-to-SQL</span>
-    </div>
-
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="Ingestion Pipeline: PyMuPDF parses 10-K text chunks & extracts visual figures for FastAPI async serving">
-      <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-      <span class="font-semibold text-secondary">Ingest:</span>
-      <span class="font-bold text-indigo-700">PyMuPDF</span>
-    </div>
-  </div>
-
-  <!-- Architecture & Model Map Modal Button -->
-  <button onclick="showGraphDAGModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 text-xs font-label font-semibold transition-all shadow-xs cursor-pointer" title="View Full System Architecture & Model Responsibilities">
-    <span class="material-symbols-outlined text-sm">account_tree</span>
-    <span>Model Map</span>
-  </button>
-</div>
 </header>
 
 <!-- ================= MAIN WORKSPACE: 3-PANEL INTUITIVE LAYOUT ================= -->
@@ -320,174 +281,37 @@
 </div>
 </div>
 
-<!-- Graph DAG & Model Architecture Modal -->
+<!-- Graph DAG Modal -->
 <div id="dag-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-<div class="bg-surface-container-lowest rounded-2xl max-w-3xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-<!-- Modal Header -->
-<div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between shrink-0">
-  <div class="flex items-center gap-2.5">
-    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-      <span class="material-symbols-outlined text-lg">account_tree</span>
-    </div>
-    <div>
-      <h3 class="text-sm font-bold text-on-surface">OmniBrain: Multi-Modal Agentic Architecture &amp; Model Map</h3>
-      <p class="text-[11px] text-secondary font-label">End-to-End Orchestration &amp; Sub-Agent Technical Responsibilities</p>
-    </div>
-  </div>
-  <button onclick="closeDAGModal()" class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer">
-    <span class="material-symbols-outlined text-xl">close</span>
-  </button>
+<div class="bg-surface-container-lowest rounded-2xl max-w-xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden">
+<div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">schema</span>
+<h3 class="text-sm font-semibold text-on-surface">LangGraph Supervisor State Graph</h3>
 </div>
-
-<!-- Modal Body (Scrollable) -->
-<div class="p-5 overflow-y-auto space-y-4 text-xs font-body text-on-surface">
-  <!-- Executive Overview Callout Box -->
-  <div class="p-4 bg-primary/5 border border-primary/15 rounded-xl space-y-2">
-    <p class="font-semibold text-primary text-sm flex items-center gap-1.5">
-      <span class="material-symbols-outlined text-base">info</span>
-      <span>System Overview</span>
-    </p>
-    <p class="text-secondary leading-relaxed">
-      <strong>OmniBrain</strong> is an Agentic Multi-Modal Intelligence platform designed to analyze complex corporate financial filings like 10-K annual reports.
-    </p>
-    <p class="text-secondary leading-relaxed">
-      Built over two phases, the system first establishes a multi-modal ingestion pipeline using <strong>PyMuPDF</strong> to parse text and isolate financial charts, indexing them in a <strong>Qdrant Vector Database</strong> and serving them via an asynchronous <strong>FastAPI</strong> backend. The core intelligence relies on a stateful, cyclic <strong>LangGraph</strong> workflow orchestrated by a <strong>Supervisor Node</strong> for dynamic task routing and loop safety. This Supervisor coordinates targeted sub-agents: a <strong>SearchAgent</strong> for vector retrieval, <strong>Self-RAG</strong> for context grading, a <strong>SQLAgent</strong> for quantitative queries, and a <strong>VisionAgent</strong> for interpreting financial charts. All of this feeds into an interactive UI that displays real-time agent thought processes, chart citations, and comprehensive investment memos.
-    </p>
-  </div>
-
-  <!-- Model Responsibility Grid -->
-  <div>
-    <h4 class="font-label text-xs uppercase tracking-wider font-bold text-secondary mb-2.5">Which Model &amp; Engine Handles What</h4>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-      <!-- Card 1: Supervisor -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-amber-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-              Supervisor Orchestrator
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded">LangGraph</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Stateful cyclic state machine operating on shared <code>AgentState</code>. Evaluates analyst query intent, manages iteration counters (hard ceiling of 4 cycles), and dynamically delegates tasks to specialized sub-agents.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: LangGraph Cyclic StateGraph • MemorySaver
-        </div>
-      </div>
-
-      <!-- Card 2: Vision Specialist -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-emerald-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              VisionAgent &amp; Analytics
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded">Gemini / GPT-4o</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            VLM prompt engineering with strict Pydantic JSON schema extraction. Deterministic Python visual analytics computes exact CAGR, YoY period-over-period growth, and outlier detection with zero LLM math hallucination.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: gemini-flash-lite-latest • GPT-4o • PIL Preprocessor
-        </div>
-      </div>
-
-      <!-- Card 3: SearchAgent & Self-RAG -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-blue-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-              SearchAgent &amp; Self-RAG
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded">Qdrant Vector DB</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Dense vector retrieval over 500-token chunks with 100-token overlap. Features an iterative Self-RAG relevance loop that grades retrieved text and autonomously rewrites queries if context is insufficient.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: Qdrant DB • Dense Embeddings • Self-RAG Grader
-        </div>
-      </div>
-
-      <!-- Card 4: SQLAgent -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-purple-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-              SQLAgent (Text-to-SQL)
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded">SQLite / Gemini</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Translates equity valuation queries into SQL to retrieve structured market metrics (stock prices, P/E ratios, market capitalization, 52-week ranges) with deterministic fallback rules.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: Text-to-SQL Generator • SQLite financial_data.db
-        </div>
-      </div>
-
-      <!-- Card 5: Ingestion Pipeline -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-indigo-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-              Multi-Modal Ingestion
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-indigo-100 text-indigo-900 px-1.5 py-0.5 rounded">PyMuPDF + FastAPI</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            High-fidelity PDF parsing extracting hierarchical text and embedded vector drawing figures (>100x100px), serving assets asynchronously through FastAPI endpoints (/api/v1/ingest, /api/v1/images).
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: PyMuPDF (fitz) • Semantic Chunker • FastAPI Uvicorn
-        </div>
-      </div>
-
-      <!-- Card 6: Safety & Observability -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-rose-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-              Safety &amp; Telemetry
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-rose-100 text-rose-900 px-1.5 py-0.5 rounded">Guardrails &amp; Traces</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Deterministic input guardrails prevent prompt injection and off-topic queries. Cross-modal verifier checks visual numbers against text context to prevent hallucinations, while Langfuse tracks latencies and tokens.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: NeMo-style Guardrails • Langfuse Tracing Manager
-        </div>
-      </div>
-    </div>
-  </div>
+<button onclick="closeDAGModal()" class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
 </div>
-
-<!-- Modal Footer -->
-<div class="p-3 bg-surface-container-low border-t border-surface-container flex items-center justify-between shrink-0">
-  <span class="text-[11px] text-secondary">Verified Test Suite: 85/85 Passed (100%) • 100% Grounded Benchmark</span>
-  <button onclick="closeDAGModal()" class="px-4 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors cursor-pointer">
-    Done
-  </button>
+<div class="p-6 font-mono text-xs text-on-surface space-y-3 bg-surface-container-lowest">
+<div class="p-3 bg-surface-container-low rounded-lg border border-surface-container">
+<p class="font-bold text-primary mb-1">StateGraph Flow:</p>
+<p class="text-secondary">[START] ➔ <strong>Supervisor</strong></p>
+<p class="text-secondary">├─► <strong>VisionAgent</strong> (VLM: GPT-4o / LLaVA)</p>
+<p class="text-secondary">├─► <strong>SearchAgent</strong> (Vector: Qdrant + Self-RAG)</p>
+<p class="text-secondary">├─► <strong>SQLAgent</strong> (DuckDB WASM / SQLite)</p>
+<p class="text-secondary">└─► <strong>Synthesizer</strong> (NeMo Guardrail Filter) ➔ [END]</p>
+</div>
+<p class="text-secondary text-[11px]">Cyclic graph with deterministic grounding check and maximum recursion limit guardrail.</p>
+</div>
+<div class="p-3 bg-surface-container-low border-t border-surface-container flex justify-end">
+<button onclick="closeDAGModal()" class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold">Close</button>
 </div>
 </div>
 </div>
 
 <!-- Contextual Quick Action / Global Key Command Toast -->
-<div id="global-toast" class="fixed bottom-4 right-6 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-3 text-xs z-40 hidden md:flex transition-all">
+<div id="global-toast" class="fixed bottom-4 right-96 mr-4 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-3 text-xs z-40 hidden md:flex transition-all">
 <div class="flex items-center gap-1.5">
 <span class="w-2 h-2 rounded-full bg-emerald-400" id="toast-indicator"></span>
 <span class="font-medium" id="toast-message">Swarm Idle</span>

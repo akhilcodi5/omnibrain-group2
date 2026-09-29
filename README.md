@@ -7,9 +7,9 @@
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
 [![Guardrails](https://img.shields.io/badge/Safety-Deterministic%20Guardrails-purple.svg)]()
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-85%2F85%20Passed%20(100%25)-brightgreen.svg)]()
-[![Benchmark](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
-[![Mid-Project Review](https://img.shields.io/badge/Mid--Review-Verified%20100%25-blue.svg)]()
+[![Tests Passing](https://img.shields.io/badge/Tests-77%2F77%20Passed-brightgreen.svg)]()
+
+[![Benchmark Pass Rate](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
 
 > **OmniBrain** is an enterprise-grade, hallucination-resistant **Agentic Multi-Modal RAG (Retrieval-Augmented Generation)** platform designed for financial and quantitative research over complex enterprise PDFs containing financial statements, balance sheet tables, trend charts, bar graphs, and unstructured textual disclosures.
 
@@ -17,11 +17,6 @@
 
 ## 📌 Table of Contents
 - [Executive Overview & Problem Statement](#-executive-overview--problem-statement)
-- [Mid-Project Review Deliverables & Audits](#-mid-project-review-deliverables--audits)
-  - [1. Week 1 & Week 2 Implementation Matrix](#1-week-1--week-2-implementation-matrix)
-  - [2. Deliverable 1: Reasoning Audit (Vector Search vs. SQL vs. Vision)](#2-deliverable-1-reasoning-audit-dynamic-supervisor-routing)
-  - [3. Deliverable 2: Vision Check (VLM Numerical Extraction & Trends)](#3-deliverable-2-vision-check-vlm-numerical-extraction--trends)
-  - [4. Mid-Project Review Technical Report PDF](#4-mid-project-review-technical-report-pdf)
 - [Enterprise Use Case: Quantitative Analyst Workflow](#-enterprise-use-case-quantitative-analyst-workflow)
 - [Team Pod Roles & Ownership](#-team-pod-roles--ownership)
 - [Multi-Modal Vision Specialist Architecture (Deep Dive)](#-multi-modal-vision-specialist-architecture-deep-dive)
@@ -30,7 +25,6 @@
 - [System Architecture](#-system-architecture)
 - [LangGraph Multi-Agent State Graph](#-langgraph-multi-agent-state-graph)
 - [API Reference (FastAPI Backend)](#-api-reference-fastapi-backend)
-- [User Interfaces & Quantitative Workspaces](#-user-interfaces--quantitative-workspaces)
 - [Evaluation, Observability & Guardrails](#-evaluation-observability--guardrails)
 - [Repository Structure](#-repository-structure)
 - [Quickstart Guide](#-quickstart-guide)
@@ -52,60 +46,6 @@ Standard Retrieval-Augmented Generation (RAG) pipelines fail when applied to com
 - **Semantic RAG & Search Agent (Qdrant + Self-RAG)**: Retrieves vector chunks and autonomously loops to rewrite queries if retrieved context is insufficient.
 - **Text-to-SQL Agent (Gemini 1.5 Pro)**: Queries structured relational databases for market benchmarks, valuations, and trading multiples.
 - **Hallucination Guardrails & Telemetry (Langfuse)**: Enforces domain boundaries, prevents prompt leakage, and traces latency, token usage, and faithfulness down to the individual sub-agent level.
-
----
-
-## 🏆 Mid-Project Review Deliverables & Audits
-
-OmniBrain has satisfied 100% of all **Week 1**, **Week 2**, and **Mid-Project Review** deliverables across both AI Engineering and Full-Stack tracks:
-
-### 1. Week 1 & Week 2 Implementation Matrix
-
-| Milestone Phase | Track | Module / Component | Implementation & Verification File |
-| :--- | :--- | :--- | :--- |
-| **Week 1** | AI Engineering | **Multi-Modal Ingestion Pipeline**<br>• PyMuPDF text & drawing parser<br>• 500-token semantic sliding window chunker<br>• Dense embeddings indexed into **Qdrant Vector DB** | [`app/services/pdf_parser.py`](file:///d:/omnibrain/app/services/pdf_parser.py)<br>[`app/services/chunking_service.py`](file:///d:/omnibrain/app/services/chunking_service.py)<br>[`storage/vector_store.py`](file:///d:/omnibrain/storage/vector_store.py) |
-| **Week 1** | Full-Stack | **FastAPI Scaffolding & Async Ingestion**<br>• Async document upload endpoints (`/api/v1/ingest`, `/api/v1/ingest/pdf`)<br>• Static extracted visual asset serving (`/api/v1/images`)<br>• Type-safe Pydantic request/response schemas | [`app/main.py`](file:///d:/omnibrain/app/main.py)<br>[`app/api/routes_ingest.py`](file:///d:/omnibrain/app/api/routes_ingest.py)<br>[`app/models/schemas.py`](file:///d:/omnibrain/app/models/schemas.py) |
-| **Week 2** | AI Engineering | **LangGraph Agentic Architecture**<br>• Stateful cyclic multi-agent StateGraph<br>• **Supervisor Node** intent classification & loop safety<br>• Specialized sub-agents: `SearchAgent`, `SelfRAG`, `VisionAgent`, `SQLAgent`, `MemoSynthesizer` | [`agents/supervisor.py`](file:///d:/omnibrain/agents/supervisor.py)<br>[`agents/search_agent.py`](file:///d:/omnibrain/agents/search_agent.py)<br>[`agents/self_rag.py`](file:///d:/omnibrain/agents/self_rag.py)<br>[`agents/vision_agent.py`](file:///d:/omnibrain/agents/vision_agent.py) |
-| **Week 2** | Full-Stack | **Interactive Quantitative Workspace & Chat UI**<br>• 3-Panel web workspace visualizing real-time agent **thought traces**<br>• Side-by-side rendering of referenced visual charts & figures<br>• NeMo-style safety guardrails & Langfuse execution telemetry | [`frontend/`](file:///d:/omnibrain/frontend/) (`npm run dev`)<br>[`guardrails/guardrail_service.py`](file:///d:/omnibrain/guardrails/guardrail_service.py)<br>[`app/core/telemetry.py`](file:///d:/omnibrain/app/core/telemetry.py) |
-
----
-
-### 2. Deliverable 1: Reasoning Audit (Dynamic Supervisor Routing)
-> **Requirement**: Prove the LangGraph supervisor can correctly decide between searching the vector database vs. executing a SQL query vs. routing to vision based on the prompt.
-
-Verified under [`tests/test_agents.py::test_supervisor_reasoning_audit_routing_decisions`](file:///d:/omnibrain/tests/test_agents.py):
-
-| Analyst Prompt | Supervisor Route | Target Node | Audit Rationale |
-| :--- | :--- | :--- | :--- |
-| *"Analyze the operating margin bar chart on page 14."* | `vision_agent` | `VisionAgentNode` | Detected visual intent keywords; routed directly to VLM image specialist. |
-| *"What is the 52-week high stock price and market cap for APEX?"* | `sql_agent` | `SQLAgentNode` | Detected structured equity metric keywords; routed to SQLite Text-to-SQL engine. |
-| *"Summarize the qualitative risk disclosures in the annual report."* | `search_agent` | `SearchAgent` &rarr; `SelfRAG` | Detected unstructured textual disclosure intent; routed to Qdrant vector retrieval. |
-
----
-
-### 3. Deliverable 2: Vision Check (VLM Numerical Extraction & Trends)
-> **Requirement**: Ensure the VLM accurately extracts numerical data from a bar chart image retrieved from the database.
-
-Verified under [`tests/test_day2_vision.py::test_structured_chart_extraction`](file:///d:/omnibrain/tests/test_day2_vision.py) & [`eval/benchmark_runner.py`](file:///d:/omnibrain/eval/benchmark_runner.py):
-
-| Evaluation Dimension | Schema Field / Parameter | Extracted Quantitative Metric | Verification Result |
-| :--- | :--- | :--- | :--- |
-| **Figure Categorization** | Chart Type & Orientation | `ChartType.BAR` (Vertical) | **MATCH (100%)** |
-| **Axes & Units** | X-Axis / Y-Axis / Scale | X: `Quarter` \| Y: `USD Millions` | **MATCH (100%)** |
-| **Data Points Extracted** | Q1, Q2, Q3, Q4 Values | `Q1: $110.0M, Q2: $125.0M, Q3: $140.0M, Q4: $155.0M` | **EXACT (0.0% Error)** |
-| **Deterministic Analytics** | Compound Annual Growth Rate | $\text{CAGR} = +12.16\%$ across fiscal periods | **MATHEMATICALLY VERIFIED** |
-| **Sequential YoY Deltas** | Period-over-Period Deltas | `Q1->Q2: +13.64%`, `Q2->Q3: +12.00%`, `Q3->Q4: +10.71%` | **UPWARD TRAJECTORY** |
-| **Hallucination Guardrail** | Cross-Modal Evidence Check | Flags contradiction when text claims revenue dropped | **100% BENCHMARK PASS** |
-
----
-
-### 4. Mid-Project Review Technical Report PDF
-A complete, 4-page technical evaluation report is generated directly from the codebase:
-- **Download / Inspect**: [`OmniBrain_Mid_Project_Review_Report.pdf`](file:///d:/omnibrain/OmniBrain_Mid_Project_Review_Report.pdf)
-- **Automated Generator Script**: [`scripts/generate_mid_review_report.py`](file:///d:/omnibrain/scripts/generate_mid_review_report.py)
-```bash
-python scripts/generate_mid_review_report.py OmniBrain_Mid_Project_Review_Report.pdf
-```
 
 ---
 
@@ -494,27 +434,11 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 🧪 Running Automated Benchmarks & Tests
 
-### Run Full Test Suite (85 Tests — 100% Pass Rate)
+### Run Full Test Suite (77 Tests)
 
 ```bash
 python -m pytest tests/ -v
 ```
-
-#### Test Suite Breakdown Across Modules:
-| Test Module | Test File Path | Tests Passed | Architectural Scope |
-| :--- | :--- | :--- | :--- |
-| **Qdrant Vector Store** | [`tests/test_vector_store.py`](file:///d:/omnibrain/tests/test_vector_store.py) | **6 / 6** | Dense embeddings, batch upsert, metadata filtering, on-disk fallback |
-| **Semantic Search Agent** | [`tests/test_search_agent.py`](file:///d:/omnibrain/tests/test_search_agent.py) | **3 / 3** | Vector query execution, score thresholding, node state transition |
-| **Self-RAG Module** | [`tests/test_self_rag.py`](file:///d:/omnibrain/tests/test_self_rag.py) | **5 / 5** | Document relevance grading, query rewriting, loop safety |
-| **Multi-Modal Ingestion** | [`tests/test_ingestion.py`](file:///d:/omnibrain/tests/test_ingestion.py) | **6 / 6** | PyMuPDF parsing, drawing extractor, semantic chunker, API routes |
-| **VLM Vision Specialist** | [`tests/test_day2_vision.py`](file:///d:/omnibrain/tests/test_day2_vision.py) | **11 / 11** | VLM engine factory, chart JSON schema, crop box inference |
-| **Vision Agent Integrator** | [`tests/test_vision_agent.py`](file:///d:/omnibrain/tests/test_vision_agent.py) | **5 / 5** | Downstream LangGraph node, base64 encoding, memo formatting |
-| **Visual Analytics Engine** | [`tests/test_visual_analytics.py`](file:///d:/omnibrain/tests/test_visual_analytics.py) | **4 / 4** | CAGR formula, YoY deltas, Z-score outlier detection, volatility |
-| **Cross-Modal Verifier** | [`tests/test_cross_modal_verifier.py`](file:///d:/omnibrain/tests/test_cross_modal_verifier.py) | **4 / 4** | Token parsing, accounting numbers, discrepancy detection logic |
-| **Reasoning & Supervisor Audit** | [`tests/test_agents.py`](file:///d:/omnibrain/tests/test_agents.py) | **3 / 3** | Supervisor dynamic edge routing (SQL vs Vector vs Vision) |
-| **Multi-Modal Integration** | [`tests/test_day4_visual_integration.py`](file:///d:/omnibrain/tests/test_day4_visual_integration.py) | **10 / 10** | Visual comparator, citation badges, overlay renderer, bridge tools |
-| **End-to-End Orchestration** | [`tests/test_end_to_end_multimodal.py`](file:///d:/omnibrain/tests/test_end_to_end_multimodal.py) | **3 / 3** | Fact-check loops, supervisor-to-memo pipeline execution |
-| **Total Test Suite** | *All modules combined* | **85 / 85 (100%)** | Full-stack & AI engineering verification |
 
 ### Run Standalone Multi-Modal Benchmark Suite
 ```bash
@@ -527,25 +451,7 @@ python eval/benchmark_runner.py
   "total_test_cases": 2,
   "passed_test_cases": 2,
   "pass_rate_percentage": 100.0,
-  "benchmark_status": "PASSED",
-  "test_case_results": [
-    {
-      "test_name": "Quarterly Revenue Bar Chart (Clean Grounding)",
-      "passed": true,
-      "grounding_score": 1.0,
-      "discrepancies_flagged": 0,
-      "derived_trends": ["upward"],
-      "latency_seconds": 0.0
-    },
-    {
-      "test_name": "Operating Margin Expansion with Discrepancy Detection",
-      "passed": true,
-      "grounding_score": 0.25,
-      "discrepancies_flagged": 1,
-      "derived_trends": ["upward"],
-      "latency_seconds": 0.0
-    }
-  ]
+  "benchmark_status": "PASSED"
 }
 ```
 

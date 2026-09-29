@@ -48,58 +48,32 @@ class BaseVisionEngine(abc.ABC):
 
 
 def _clean_and_parse_json(content: str) -> Dict[str, Any]:
-    """Safely extracts and parses JSON from VLM output, handling markdown blocks, trailing tokens, and bracket boundaries."""
+    """Safely extracts and parses JSON from VLM output, handling markdown blocks and bracket boundaries."""
     if not content or not content.strip():
         return {}
     cleaned = content.strip()
-
-    # 1. Regex search for markdown fenced JSON blocks
-    import re
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(1))
-        except Exception:
-            pass
-
-    # 2. Strip markdown code fencing if at boundaries
-    if "```" in cleaned:
-        lines = []
-        for line in cleaned.splitlines():
-            if line.strip().startswith("```"):
-                continue
-            lines.append(line)
+    # Strip markdown code fencing if present
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
         cleaned = "\n".join(lines).strip()
 
     try:
         return json.loads(cleaned)
     except (json.JSONDecodeError, TypeError):
-        pass
-
-    # 3. Fallback to finding outermost JSON object brackets
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end != -1 and start < end:
-        try:
-            return json.loads(cleaned[start:end + 1])
-        except Exception as e:
-            logger.debug(f"Outermost bracket JSON parse fallback failed: {e}")
-
-    # 4. If partially truncated JSON, attempt auto-repair by closing open strings and structures
-    if start != -1:
-        truncated_candidate = cleaned[start:]
-        for suffix in ["\"}]}", "\"}]}}", "\"}", "}]}", "}}", "}"]:
+        # Fallback to finding outermost JSON object brackets
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and start < end:
             try:
-                repaired = json.loads(truncated_candidate + suffix)
-                logger.info("Successfully recovered partially truncated VLM JSON output.")
-                return repaired
-            except Exception:
-                continue
-
-    logger.warning(f"Could not parse valid JSON from VLM output (fallback used): {content[:150]}")
-    clean_lines = [l.strip().lstrip("#-*• ") for l in content.splitlines() if l.strip()]
-    first_summary = clean_lines[0] if clean_lines else "Visual exhibit analysis completed."
-    return {"raw_text": content, "summary": first_summary}
+                return json.loads(cleaned[start:end + 1])
+            except Exception as e:
+                logger.debug(f"Outermost bracket JSON parse fallback failed: {e}")
+        logger.error(f"Failed to parse valid JSON from VLM output: {content[:200]}")
+        return {"raw_text": content, "error": "Invalid JSON response"}
 
 
 class OpenAIVisionEngine(BaseVisionEngine):
@@ -247,22 +221,12 @@ class OllamaLLaVAEngine(BaseVisionEngine):
 
 
 class GeminiVisionEngine(BaseVisionEngine):
-    """Google Gemini REST API implementation with intelligent model failover."""
+    """Google Gemini REST API implementation (gemini-3.5-flash-lite)."""
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.5-flash-lite"):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model = model or os.getenv("GEMINI_VISION_MODEL", "gemini-flash-latest")
+        self.model = os.getenv("GEMINI_VISION_MODEL", model)
         self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
-        raw_candidates = [
-            self.model,
-            "gemini-flash-latest",
-            "gemini-pro-latest",
-            "gemini-flash-lite-latest",
-        ]
-        self.fallback_models = []
-        for m in raw_candidates:
-            if m and m not in self.fallback_models:
-                self.fallback_models.append(m)
 
     async def generate_response(
         self,
@@ -271,17 +235,9 @@ class GeminiVisionEngine(BaseVisionEngine):
         system_prompt: Optional[str] = None,
         media_type: str = "image/jpeg",
         temperature: float = 0.1,
-        response_mime_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is missing. Please set it in your .env file.")
-
-        gen_config: Dict[str, Any] = {
-            "temperature": temperature,
-            "maxOutputTokens": 8192,
-        }
-        if response_mime_type:
-            gen_config["responseMimeType"] = response_mime_type
 
         payload = {
             "contents": [{
@@ -295,52 +251,47 @@ class GeminiVisionEngine(BaseVisionEngine):
                     }
                 ]
             }],
-            "generationConfig": gen_config
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": 8192
+            }
         }
 
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            last_error = None
-            for model_candidate in self.fallback_models:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_candidate}:generateContent?key={self.api_key}"
+        # Strict 5-second pacing gap
+        await asyncio.sleep(5)
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            max_retries = 5
+            retry_delay = 4.0
+            
+            for attempt in range(max_retries + 1):
                 try:
-                    res = await client.post(url, json=payload)
+                    res = await client.post(f"{self.base_url}?key={self.api_key}", json=payload)
                     res.raise_for_status()
                     data = res.json()
-
+                    
                     content = ""
                     if "candidates" in data and len(data["candidates"]) > 0:
                         parts = data["candidates"][0].get("content", {}).get("parts", [])
                         if parts:
                             content = parts[0].get("text", "")
-
+    
                     return {
                         "content": content,
                         "usage": {"eval_count": 0},
-                        "model": model_candidate,
+                        "model": self.model,
                     }
                 except httpx.HTTPStatusError as e:
-                    last_error = e
-                    status = e.response.status_code
-                    if status in (429, 503, 404):
-                        logger.warning(
-                            f"Gemini model '{model_candidate}' returned HTTP {status}. "
-                            f"Failing over to next available model in {self.fallback_models}..."
-                        )
+                    if (e.response.status_code == 429 or e.response.status_code >= 500) and attempt < max_retries:
+                        logger.warning(f"Gemini API transient error ({e.response.status_code}). Retrying in {retry_delay}s... (Attempt {attempt+1}/{max_retries})")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2
                         continue
-                    else:
-                        logger.error(f"Gemini API HTTP {status} error: {e.response.text[:200]}")
-                        raise
+                    logger.error(f"Gemini API inference error: {str(e)}")
+                    raise
                 except Exception as e:
-                    last_error = e
-                    logger.warning(f"Connection error to Gemini model '{model_candidate}': {e}. Trying alternative model...")
-                    continue
-
-            # If all cloud models failed (e.g. 503 outage or quota exhausted), fall back to Mock engine
-            logger.warning(f"All Gemini models exhausted ({last_error}). Falling back to deterministic offline extraction.")
-            mock_engine = MockVisionEngine()
-            return await mock_engine.generate_response(
-                base64_image, prompt, system_prompt, media_type, temperature
-            )
+                    logger.error(f"Gemini API inference error: {str(e)}")
+                    raise
 
     async def extract_structured_json(
         self,
@@ -349,32 +300,12 @@ class GeminiVisionEngine(BaseVisionEngine):
         system_prompt: Optional[str] = None,
         media_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
-        instruction = f"{prompt}\nReturn strictly a valid JSON object without markdown fences or additional commentary."
-        try:
-            result = await self.generate_response(
-                base64_image,
-                instruction,
-                system_prompt,
-                media_type,
-                temperature=0.0,
-                response_mime_type="application/json",
-            )
-            # If fallback to Mock engine occurred inside generate_response:
-            if result.get("model") == "mock-vlm-engine":
-                mock_engine = MockVisionEngine()
-                return await mock_engine.extract_structured_json(base64_image, prompt, system_prompt, media_type)
-
-            content = result.get("content", "{}")
-            parsed = _clean_and_parse_json(content)
-            # If JSON missing required keys, fall back to robust Mock parser
-            if not parsed or "error" in parsed or ("series" not in parsed and "rows" not in parsed):
-                mock_engine = MockVisionEngine()
-                return await mock_engine.extract_structured_json(base64_image, prompt, system_prompt, media_type)
-            return parsed
-        except Exception as e:
-            logger.warning(f"Gemini API structured extraction error: {e}. Falling back to deterministic parser.")
-            mock_engine = MockVisionEngine()
-            return await mock_engine.extract_structured_json(base64_image, prompt, system_prompt, media_type)
+        instruction = f"{prompt}\nReturn strictly JSON format."
+        result = await self.generate_response(
+            base64_image, instruction, system_prompt, media_type, temperature=0.0
+        )
+        content = result.get("content", "{}")
+        return _clean_and_parse_json(content)
 
 
 class MockVisionEngine(BaseVisionEngine):
@@ -421,6 +352,7 @@ class MockVisionEngine(BaseVisionEngine):
 
         if is_table:
             return {
+
                 "title": "Consolidated Statement of Income",
                 "headers": ["Line Item", "Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024"],
                 "rows": [
@@ -439,34 +371,6 @@ class MockVisionEngine(BaseVisionEngine):
                 },
                 "currency": "USD",
                 "scale": "Millions",
-            }
-
-        if any(k in p_lower for k in ["nvidia", "nvda", "blackwell", "68,127", "68.1", "q4 fy26", "fy26"]):
-            return {
-                "title": "NVIDIA Q4 & FY26 Revenue Performance",
-                "chart_type": "bar",
-                "x_axis_label": "Fiscal Quarter",
-                "y_axis_label": "USD Millions",
-                "series": [
-                    {
-                        "series_name": "Quarterly Revenue",
-                        "data_points": [
-                            {"label": "Q4 FY25", "value": 39331.0, "raw_value": "$39,331M", "unit": "USD Millions"},
-                            {"label": "Q1 FY26", "value": 44062.0, "raw_value": "$44,062M", "unit": "USD Millions"},
-                            {"label": "Q2 FY26", "value": 53040.0, "raw_value": "$53,040M", "unit": "USD Millions"},
-                            {"label": "Q3 FY26", "value": 57006.0, "raw_value": "$57,006M", "unit": "USD Millions"},
-                            {"label": "Q4 FY26", "value": 68127.0, "raw_value": "$68,127M", "unit": "USD Millions"},
-                        ],
-                    }
-                ],
-                "summary": "NVIDIA quarterly revenue demonstrated unprecedented expansion from $39,331M in Q4 FY25 to $68,127M in Q4 FY26, driven by record Data Center demand (+73.2% YoY, +19.5% QoQ).",
-                "key_insights": [
-                    "Q4 FY26 Revenue reached record $68,127M (+73.2% YoY, +19.5% QoQ)",
-                    "Data Center segment contributed record $62.3B in revenue (+75% YoY)",
-                    "Full-year revenue reached $215.9B (+65% YoY)",
-                ],
-                "notable_anomalies": [],
-                "confidence_score": 0.99,
             }
 
         return {

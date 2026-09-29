@@ -13,7 +13,6 @@ class AgentState(TypedDict):
     
     # Original user query and routing decisions
     query: str
-    pdf_name: Optional[str]
     next_agent: Optional[str]
     trace_id: Optional[str]
     

@@ -181,22 +181,18 @@ class VisionService:
         try:
             if not isinstance(raw_json, dict):
                 raw_json = {}
-            if "summary" not in raw_json or raw_json.get("summary") == "Invalid JSON response" or raw_json.get("error"):
-                clean_text = raw_json.get("raw_text") or "Consolidated quarterly financial exhibit showing revenue progression and operational line items."
-                clean_lines = [l.strip().lstrip("#-*• ") for l in clean_text.splitlines() if l.strip()]
-                raw_json["summary"] = clean_lines[0] if clean_lines else "Consolidated quarterly financial exhibit."
+            if "summary" not in raw_json:
+                raw_json["summary"] = raw_json.get("error") or raw_json.get("raw_text") or "No chart summary provided."
             if "chart_type" not in raw_json or not raw_json["chart_type"]:
                 raw_json["chart_type"] = "unknown"
-            if raw_json.get("title") in (None, "", "Visual Figure", "Financial Figure"):
-                raw_json["title"] = "Quarterly Financial Performance Exhibit"
             return ExtractedChartData.model_validate(raw_json)
         except Exception as e:
             logger.warning(f"Chart schema validation fallback: {e}")
             return ExtractedChartData(
-                title=raw_json.get("title") or "Quarterly Financial Performance Exhibit",
+                title=raw_json.get("title", "Visual Figure"),
                 chart_type=ChartType.UNKNOWN,
-                summary=raw_json.get("summary") or "Consolidated quarterly financial exhibit showing revenue progression and operational line items.",
-                key_insights=[f"Analyzed exhibit from document context: {context}"],
+                summary=raw_json.get("summary") or raw_json.get("error") or str(raw_json.get("raw_text", "Could not parse valid chart data.")),
+                key_insights=[str(e)] if "error" in raw_json else [],
             )
 
     async def extract_structured_table(
@@ -220,19 +216,15 @@ class VisionService:
         try:
             if not isinstance(raw_json, dict):
                 raw_json = {}
-            if "summary" not in raw_json or raw_json.get("summary") == "Invalid JSON response" or raw_json.get("error"):
-                clean_text = raw_json.get("raw_text") or "Consolidated financial table showing operating metrics."
-                clean_lines = [l.strip().lstrip("#-*• ") for l in clean_text.splitlines() if l.strip()]
-                raw_json["summary"] = clean_lines[0] if clean_lines else "Consolidated financial table showing operating metrics."
-            if raw_json.get("title") in (None, "", "Visual Table"):
-                raw_json["title"] = "Consolidated Statement Exhibit"
+            if "summary" not in raw_json:
+                raw_json["summary"] = raw_json.get("error") or raw_json.get("raw_text") or "No table summary provided."
             return ExtractedTableData.model_validate(raw_json)
         except Exception as e:
             logger.warning(f"Table schema validation fallback: {e}")
             return ExtractedTableData(
-                title=raw_json.get("title") or "Consolidated Statement Exhibit",
+                title=raw_json.get("title", "Visual Table"),
                 headers=raw_json.get("headers", []),
                 rows=raw_json.get("rows", []),
-                summary=raw_json.get("summary") or "Consolidated financial table showing operating metrics.",
+                summary=raw_json.get("summary") or raw_json.get("error") or str(raw_json.get("raw_text", "Could not parse valid table data.")),
             )
 

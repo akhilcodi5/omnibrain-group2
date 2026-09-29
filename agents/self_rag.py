@@ -13,45 +13,40 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiRESTLLM:
-    def __init__(self, api_key: str, model: str = "gemini-flash-latest"):
+    def __init__(self, api_key: str, model: str = "gemini-3.5-flash-lite"):
         self.api_key = api_key
         self.model = model
-        self.candidates = [model, "gemini-flash-latest", "gemini-pro-latest", "gemini-flash-lite-latest"]
+        self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
 
     def invoke(self, prompt: str):
         import httpx
+        import time
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.0, "maxOutputTokens": 2048}
         }
         
-        with httpx.Client(timeout=4.0) as client:
-            last_err = None
-            for m in self.candidates:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={self.api_key}"
-                try:
-                    res = client.post(url, json=payload)
-                    res.raise_for_status()
-                    data = res.json()
-                    content = ""
-                    if "candidates" in data and len(data["candidates"]) > 0:
-                        parts = data["candidates"][0].get("content", {}).get("parts", [])
-                        if parts:
-                            content = parts[0].get("text", "")
-                    
-                    class MockResponse:
-                        def __init__(self, text):
-                            self.content = text
-                    return MockResponse(content)
-                except Exception as e:
-                    last_err = e
-                    continue
-            
-            logger.warning(f"All Gemini REST LLM models failed ({last_err}). Falling back to rule-based response.")
-            class FallbackResponse:
-                def __init__(self):
-                    self.content = "yes\nDocument context is relevant and grounded."
-            return FallbackResponse()
+        # Pacing for 15 RPM limit
+        time.sleep(4)
+        
+        with httpx.Client(timeout=60.0) as client:
+            try:
+                res = client.post(f"{self.base_url}?key={self.api_key}", json=payload)
+                res.raise_for_status()
+                data = res.json()
+                content = ""
+                if "candidates" in data and len(data["candidates"]) > 0:
+                    parts = data["candidates"][0].get("content", {}).get("parts", [])
+                    if parts:
+                        content = parts[0].get("text", "")
+                
+                class MockResponse:
+                    def __init__(self, text):
+                        self.content = text
+                return MockResponse(content)
+            except Exception as e:
+                logger.error(f"Gemini REST LLM failed: {e}")
+                raise
 
 
 class SelfRAGEngine:
@@ -148,9 +143,7 @@ class SelfRAGEngine:
                 )
                 response = llm.invoke(prompt)
                 rewritten = getattr(response, "content", str(response)).strip().strip('"\'')
-                # Validate that rewritten query is not an affirmative greeting or status string
-                lower_r = rewritten.lower()
-                if rewritten and not lower_r.startswith("yes") and "relevant" not in lower_r and "grounded" not in lower_r and len(rewritten) > 5:
+                if rewritten:
                     logger.info(f"LLM rewritten query: '{query}' -> '{rewritten}'")
                     return rewritten
             except Exception as e:
