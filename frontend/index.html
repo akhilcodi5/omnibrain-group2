@@ -273,7 +273,7 @@
       <div class="absolute left-3.5 flex items-center pointer-events-none text-primary">
         <span class="material-symbols-outlined text-xl">auto_awesome</span>
       </div>
-      <input id="query-input" onkeydown="if(event.key==='Enter') executeAnalystQuery()" class="w-full pl-11 pr-24 py-3.5 bg-surface-container-lowest text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70" placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&D headcount vs amortization')..." type="text" value=""/>
+      <input id="query-input" onkeydown="if(event.key==='Enter'){event.preventDefault();executeAnalystQuery();}" class="w-full pl-11 pr-24 py-3.5 bg-surface-container-lowest text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70" placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&D headcount vs amortization')..." type="text" value=""/>
       <button id="execute-btn" onclick="executeAnalystQuery()" class="absolute right-2 px-3 py-2 bg-primary text-on-primary text-xs font-semibold rounded-lg hover:bg-primary-container transition-all flex items-center gap-1 shadow-xs active:scale-95">
         <span>Execute</span>
         <span class="material-symbols-outlined text-sm">arrow_forward</span>

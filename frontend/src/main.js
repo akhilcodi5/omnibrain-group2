@@ -262,6 +262,13 @@ export async function executeAnalystQuery() {
   const query = input.value.trim();
   if (!query) return;
 
+  const execBtn = document.getElementById('execute-btn');
+  if (execBtn && execBtn.disabled) return;
+
+  // Immediately clear input so the prompt doesn't remain in the chat box
+  input.value = '';
+  input.focus();
+
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
@@ -294,7 +301,6 @@ export async function executeAnalystQuery() {
     traceContainer.scrollTop = traceContainer.scrollHeight;
   }
   
-  const execBtn = document.getElementById('execute-btn');
   if (execBtn) {
     execBtn.disabled = true;
     execBtn.innerHTML =
