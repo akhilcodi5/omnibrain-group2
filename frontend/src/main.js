@@ -773,8 +773,24 @@ async function exportChat(format) {
   toggleExportMenu(); // Close menu
   
   if (!window.chatHistory || window.chatHistory.length === 0) {
-    showToast('Chat history is empty. Nothing to export.');
-    return;
+    // If chatHistory is empty, check if there is an active memo or query response on screen
+    const traceBubbles = document.querySelectorAll('#chat-trace-container .prose');
+    if (traceBubbles.length > 0) {
+      window.chatHistory = Array.from(traceBubbles).map((bubble, idx) => ({
+        query: `Research Query #${idx + 1}`,
+        response: bubble.innerText || bubble.textContent,
+        citations: []
+      }));
+    } else if (latestMemoMarkdown && latestMemoMarkdown !== 'No memo generated yet.') {
+      window.chatHistory = [{
+        query: 'Quantitative Investment Memorandum',
+        response: latestMemoMarkdown,
+        citations: []
+      }];
+    } else {
+      showToast('Chat history is empty. Please execute a query first.');
+      return;
+    }
   }
   
   showToast(`Generating ${format.toUpperCase()} export...`);
@@ -790,7 +806,7 @@ async function exportChat(format) {
     });
     
     if (!res.ok) {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({ detail: 'Failed to export' }));
       throw new Error(err.detail || 'Failed to export');
     }
     
@@ -827,10 +843,44 @@ document.addEventListener('click', (event) => {
   }
 });
 
-// Automatically load workspace artifacts on page load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => loadWorkspaceArtifacts());
-} else {
+function initInspectAndModals() {
   loadWorkspaceArtifacts();
+
+  // Backdrop click dismissal for modals
+  const artifactModal = document.getElementById('artifact-modal');
+  if (artifactModal) {
+    artifactModal.addEventListener('click', (e) => {
+      if (e.target === artifactModal) closeArtifactModal();
+    });
+  }
+
+  const citationModal = document.getElementById('citation-modal');
+  if (citationModal) {
+    citationModal.addEventListener('click', (e) => {
+      if (e.target === citationModal) closeCitationModal();
+    });
+  }
+
+  const dagModal = document.getElementById('dag-modal');
+  if (dagModal) {
+    dagModal.addEventListener('click', (e) => {
+      if (e.target === dagModal) closeDAGModal();
+    });
+  }
+
+  const inspectBtn = document.getElementById('inspect-all-btn');
+  if (inspectBtn) {
+    inspectBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      inspectAllArtifacts();
+    });
+  }
+}
+
+// Automatically initialize workspace artifacts and modal listeners
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initInspectAndModals);
+} else {
+  initInspectAndModals();
 }
 
