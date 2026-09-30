@@ -326,7 +326,6 @@ export async function executeAnalystQuery() {
     traceContainer.scrollTop = traceContainer.scrollHeight;
   }
 
-  const execBtn = document.getElementById('execute-btn');
   if (execBtn) {
     execBtn.disabled = true;
     execBtn.innerHTML =

@@ -18,10 +18,6 @@
 ## 📌 Table of Contents
 - [Executive Overview & Problem Statement](#-executive-overview--problem-statement)
 - [Enterprise Use Case: Quantitative Analyst Workflow](#-enterprise-use-case-quantitative-analyst-workflow)
-- [Team Pod Roles & Ownership](#-team-pod-roles--ownership)
-- [Multi-Modal Vision Specialist Architecture (Deep Dive)](#-multi-modal-vision-specialist-architecture-deep-dive)
-  - [2A. VLM Prompt & Vision Extraction Pipeline](#2a-vlm-prompt--vision-extraction-pipeline)
-  - [2B. Visual Analytics & Multi-Modal Tool Integration](#2b-visual-analytics--multi-modal-tool-integration)
 - [System Architecture](#-system-architecture)
 - [Multi-Modal Vision Specialist Deep Dive](#-multi-modal-vision-specialist-deep-dive)
   - [VLM Prompt & Extraction Pipeline](#vlm-prompt--extraction-pipeline)
@@ -31,6 +27,7 @@
   - [Dynamic Intent Classification & Routing](#dynamic-intent-classification--routing)
   - [Quantitative Vision Extraction & Grounding](#quantitative-vision-extraction--grounding)
 - [API Reference (FastAPI Backend)](#-api-reference-fastapi-backend)
+- [User Interfaces & Quantitative Workspaces](#-user-interfaces--quantitative-workspaces)
 - [Evaluation, Observability & Guardrails](#-evaluation-observability--guardrails)
 - [Repository Structure](#-repository-structure)
 - [Quickstart Guide](#-quickstart-guide)

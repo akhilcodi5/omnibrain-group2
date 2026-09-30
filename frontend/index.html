@@ -301,7 +301,7 @@
             <div class="absolute left-3.5 flex items-center pointer-events-none text-primary">
               <span class="material-symbols-outlined text-xl">auto_awesome</span>
             </div>
-            <input id="query-input" onkeydown="if(event.key==='Enter') executeAnalystQuery()"
+            <input id="query-input" onkeydown="if(event.key==='Enter'){event.preventDefault();executeAnalystQuery();}"
               class="w-full pl-11 pr-24 py-3.5 bg-surface-container-lowest text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70"
               placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&D headcount vs amortization')..." type="text"
               value="" />

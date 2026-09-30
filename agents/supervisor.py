@@ -46,12 +46,12 @@ def supervisor_node(state: AgentState) -> Dict[str, Any]:
 
     if iteration >= 4:
         next_node = "synthesizer"
-    elif not has_search_run:
-        next_node = "search_agent"
     elif intent.requires_visual_agent and not has_vision_run:
         next_node = "vision_agent"
     elif any(k in query.lower() for k in ["price", "p/e", "market cap", "stock", "52-week", "ticker"]) and not has_sql_run:
         next_node = "sql_agent"
+    elif not has_search_run:
+        next_node = "search_agent"
     else:
         next_node = "synthesizer"
 
