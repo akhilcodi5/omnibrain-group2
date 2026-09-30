@@ -1,6 +1,8 @@
 """FastAPI endpoints for Visual Analytics, Cross-Modal Verification, Citation Rendering, and Benchmarking (Task 2B)."""
 
 import logging
+import os
+import re
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from PIL import Image
@@ -286,3 +288,113 @@ async def list_visual_tools_endpoint():
         }
         for t in tools
     ]
+
+
+@router.get("/artifacts/recent")
+async def get_recent_artifacts(doc_name: Optional[str] = None):
+    """List recent visual artifacts from storage/extracted_images for instant frontend hydration."""
+    extracted_dir = "storage/extracted_images"
+    if not os.path.exists(extracted_dir):
+        return {"artifacts": [], "pdf_name": None, "total_pages": 0}
+
+    files = [
+        f for f in os.listdir(extracted_dir)
+        if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+    ]
+    if not files:
+        return {"artifacts": [], "pdf_name": None, "total_pages": 0}
+
+    # Group by document name
+    doc_map = {}
+    for f in files:
+        m = re.match(r"(?:chart|img|table)_(.+)_[pP](\d+)_", f)
+        if m:
+            doc = m.group(1)
+            mtime = os.path.getmtime(os.path.join(extracted_dir, f))
+            if doc not in doc_map or mtime > doc_map[doc]["mtime"]:
+                doc_map[doc] = {"mtime": mtime, "has_charts": f.startswith("chart_")}
+
+    target_doc = None
+    if doc_name:
+        clean_name = doc_name.replace(".pdf", "").replace(".PDF", "")
+        for d in doc_map:
+            if clean_name.lower() in d.lower():
+                target_doc = d
+                break
+
+    if not target_doc:
+        sorted_docs = sorted(
+            doc_map.keys(),
+            key=lambda d: (
+                doc_map[d]["has_charts"],
+                not d.startswith("q3_"),
+                doc_map[d]["mtime"]
+            ),
+            reverse=True
+        )
+        target_doc = sorted_docs[0] if sorted_docs else None
+
+    doc_files = [f for f in files if target_doc and target_doc in f] if target_doc else files[:20]
+
+    # Deduplicate multiple extractions of same page and chart number
+    doc_files.sort(
+        key=lambda f: os.path.getmtime(os.path.join(extracted_dir, f)),
+        reverse=True
+    )
+    seen_exhibits = set()
+    deduped_files = []
+    for fname in doc_files:
+        p_num_match = re.search(r"_[pP](\d+)_(\d+)_", fname)
+        if p_num_match:
+            key = (int(p_num_match.group(1)), int(p_num_match.group(2)))
+            if key in seen_exhibits:
+                continue
+            seen_exhibits.add(key)
+        deduped_files.append(fname)
+
+    # Natural sort by page number
+    def sort_key(fname):
+        p_match = re.search(r"_[pP](\d+)_", fname)
+        page = int(p_match.group(1)) if p_match else 0
+        return (page, fname)
+
+    deduped_files.sort(key=sort_key)
+
+    artifacts = []
+    max_page = 1
+    table_count = 0
+    chart_count = 0
+    for idx, fname in enumerate(deduped_files):
+        p_match = re.search(r"_[pP](\d+)_", fname)
+        page = int(p_match.group(1)) if p_match else 1
+        if page > max_page:
+            max_page = page
+
+        is_table = fname.startswith("table_")
+        if is_table:
+            table_count += 1
+            label = f"Extracted Table {table_count}"
+        else:
+            chart_count += 1
+            label = f"Extracted Chart {chart_count}"
+
+        artifacts.append({
+            "index": idx,
+            "filename": fname,
+            "url": f"/api/v1/images/{fname}",
+            "title": label,
+            "type": "table" if is_table else "chart",
+            "page": page,
+        })
+
+    readable_doc_name = (
+        (target_doc + ".pdf")
+        if target_doc and not target_doc.lower().endswith(".pdf")
+        else (target_doc or "Active Document")
+    )
+    return {
+        "pdf_name": readable_doc_name,
+        "total_pages": max_page,
+        "artifacts": artifacts
+    }
+

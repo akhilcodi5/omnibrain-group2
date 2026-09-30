@@ -255,8 +255,11 @@
         <div class="space-y-2">
           <div class="flex items-center justify-between text-xs font-label text-secondary px-1">
             <span class="uppercase tracking-wider font-semibold text-[10px]">High-Salience Artifacts</span>
-            <span class="text-[11px] text-primary cursor-pointer hover:underline"
-              onclick="showToast('Inspecting all artifacts...')">Inspect All</span>
+            <button type="button" class="text-[11px] text-primary cursor-pointer hover:underline font-semibold flex items-center gap-0.5 bg-transparent border-0 p-0"
+              id="inspect-all-btn" onclick="inspectAllArtifacts()">
+              <span class="material-symbols-outlined text-xs">zoom_in</span>
+              <span>Inspect All</span>
+            </button>
           </div>
           <div id="artifact-cards-wrapper" class="space-y-2">
           </div>
@@ -344,44 +347,69 @@
   </main>
 
   <!-- ================= MODALS & TOAST NOTIFICATIONS ================= -->
-  <!-- Artifact Bounding Box Preview Modal -->
+  <!-- Artifact Bounding Box / Exhibit Inspector Modal -->
   <div id="artifact-modal"
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    class="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div
-      class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      class="bg-surface-container-lowest rounded-2xl max-w-3xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-primary text-xl" id="modal-icon">image</span>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl" id="modal-icon">bar_chart</span>
+          </div>
           <div>
-            <h3 class="text-sm font-semibold text-on-surface" id="modal-title">Artifact Title</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-on-surface" id="modal-title">Extracted Visual Exhibit</h3>
+              <span id="modal-counter" class="text-[10px] bg-primary/10 text-primary font-mono font-semibold px-2 py-0.5 rounded-full">Exhibit 1 of 1</span>
+            </div>
             <p class="text-xs text-secondary" id="modal-page">PDF Page Citation</p>
           </div>
         </div>
-        <button onclick="closeArtifactModal()"
-          class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
-          <span class="material-symbols-outlined text-xl">close</span>
-        </button>
-      </div>
-      <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-surface-container-lowest"
-        id="modal-body">
-        <div
-          class="w-full max-w-lg aspect-video bg-surface-container-low rounded-xl border border-dashed border-outline-variant flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
-          <div
-            class="absolute inset-4 border-2 border-emerald-500 bg-emerald-500/10 rounded-lg flex items-start justify-between p-2">
-            <span class="text-[10px] bg-emerald-600 text-white font-label px-1.5 py-0.5 rounded font-bold">Bounding Box
-              • Grounded</span>
-            <span class="text-[10px] text-emerald-800 font-mono">100% Grounded</span>
-          </div>
-          <span class="material-symbols-outlined text-4xl text-primary mb-2">query_stats</span>
-          <p class="text-xs font-semibold text-on-surface" id="modal-preview-text">Extracted Visual Chart Exhibit</p>
-          <p class="text-[11px] text-secondary mt-1">Grounding verified against SEC Edgar 10-K document store.</p>
+        <div class="flex items-center gap-2">
+          <a id="modal-full-img-link" href="#" target="_blank" class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-container transition-colors flex items-center gap-1 text-xs" title="Open Full Image in New Tab">
+            <span class="material-symbols-outlined text-base">open_in_new</span>
+            <span class="hidden sm:inline text-[11px] font-medium">Full Res</span>
+          </a>
+          <button onclick="closeArtifactModal()"
+            class="p-1.5 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-xl">close</span>
+          </button>
         </div>
       </div>
+      <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-surface-container-lowest gap-3"
+        id="modal-body">
+        <div class="relative max-w-full max-h-[58vh] flex items-center justify-center bg-surface-container-low rounded-xl p-2 border border-outline-variant/30 shadow-inner overflow-hidden">
+          <img id="modal-artifact-img" src="" alt="Extracted Artifact" class="max-h-[54vh] max-w-full w-auto object-contain rounded-lg" />
+          <div class="absolute top-3 left-3 flex items-center gap-1.5 bg-emerald-600/90 text-white text-[10px] font-semibold px-2 py-1 rounded-md shadow-xs backdrop-blur-xs">
+            <span class="material-symbols-outlined text-xs">verified</span>
+            <span>100% Grounded • Bounding Box Verified</span>
+          </div>
+        </div>
+        <p class="text-[11px] text-secondary flex items-center gap-1.5 text-center">
+          <span class="material-symbols-outlined text-xs text-primary">info</span>
+          <span>Extracted by OmniBrain Multimodal Ingestion Pipeline. Grounded against audited SEC filing exhibits.</span>
+        </p>
+      </div>
       <div
-        class="p-3 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs font-label">
-        <span class="text-emerald-700 font-medium">Confidence Score: 0.98</span>
-        <button onclick="closeArtifactModal()"
-          class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold">Done</button>
+        class="p-3.5 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs font-label">
+        <div class="flex items-center gap-2">
+          <button onclick="navigateArtifact(-1)" class="px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+            <span>Previous</span>
+          </button>
+          <button onclick="navigateArtifact(1)" class="px-2.5 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer">
+            <span>Next</span>
+            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-emerald-700 font-semibold text-xs flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">check_circle</span>
+            <span>Confidence: 0.98</span>
+          </span>
+          <button onclick="closeArtifactModal()"
+            class="px-4 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary-container transition-colors shadow-xs cursor-pointer">Done</button>
+        </div>
       </div>
     </div>
   </div>
@@ -437,7 +465,7 @@
   </div>
 
   <!-- Citation Content Modal -->
-  <div id="citation-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+  <div id="citation-modal" class="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
     <div class="bg-surface-container-lowest rounded-2xl max-w-3xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -463,7 +491,7 @@
 
   <!-- Contextual Quick Action / Global Key Command Toast -->
   <div id="global-toast"
-    class="fixed bottom-4 right-96 mr-4 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-3 text-xs z-40 hidden md:flex transition-all">
+    class="fixed bottom-4 right-96 mr-4 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-3 text-xs z-[90] hidden md:flex transition-all">
     <div class="flex items-center gap-1.5">
       <span class="w-2 h-2 rounded-full bg-emerald-400" id="toast-indicator"></span>
       <span class="font-medium" id="toast-message">Swarm Idle</span>

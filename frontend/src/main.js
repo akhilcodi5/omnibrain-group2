@@ -5,6 +5,8 @@ import { marked } from 'marked';
 let latestMemoMarkdown = 'No memo generated yet.';
 let currentUploadedImages = [];
 let currentUploadedPdfName = null;
+let currentArtifactList = [];
+let currentArtifactIndex = 0;
 window.chatHistory = [];
 
 // Global Toast System
@@ -116,21 +118,187 @@ export function copyMarkdownMemo(btn) {
     });
 }
 
-// Artifact Modal
-export function previewArtifact(title, page, type) {
+// Artifact Inspection System
+export async function loadWorkspaceArtifacts(targetDoc = null) {
+  try {
+    const url = targetDoc ? `/api/v1/visual/artifacts/recent?doc_name=${encodeURIComponent(targetDoc)}` : '/api/v1/visual/artifacts/recent';
+    const res = await fetch(url);
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (!data.artifacts || data.artifacts.length === 0) return false;
+
+    currentArtifactList = data.artifacts;
+    currentUploadedImages = data.artifacts.map(a => a.filename);
+    currentUploadedPdfName = data.pdf_name;
+
+    const titleElem = document.getElementById('doc-card-title');
+    const pgElem = document.getElementById('doc-card-pgcount');
+    const subtitleElem = document.getElementById('doc-card-subtitle');
+    const ocrStatus = document.getElementById('ocr-status');
+    const ocrStatusIcon = document.getElementById('ocr-status-icon');
+    const activeDocPages = document.getElementById('active-doc-pages');
+
+    if (titleElem && data.pdf_name) titleElem.textContent = data.pdf_name;
+    if (pgElem && data.total_pages) pgElem.textContent = `${data.total_pages} Pgs`;
+    if (subtitleElem) subtitleElem.textContent = `Active Ingest Corpus • ${data.artifacts.length} Visual Exhibits`;
+    if (ocrStatus) ocrStatus.textContent = 'OCR Completed';
+    if (ocrStatusIcon) ocrStatusIcon.textContent = 'check_circle';
+    if (activeDocPages && data.total_pages) activeDocPages.textContent = `(${data.total_pages} pgs)`;
+
+    renderArtifactCards(data.artifacts);
+    return true;
+  } catch (err) {
+    console.warn('Failed to load recent artifacts:', err);
+    return false;
+  }
+}
+
+export function renderArtifactCards(artifacts) {
+  const artifactContainer = document.getElementById('artifact-cards-wrapper');
+  if (!artifactContainer) return;
+  artifactContainer.innerHTML = '';
+
+  let tableCount = 0;
+  let chartCount = 0;
+
+  artifacts.forEach((art, idx) => {
+    const isTable = art.type === 'table';
+    if (isTable) tableCount++; else chartCount++;
+    const icon = isTable ? 'table_chart' : 'bar_chart';
+
+    artifactContainer.innerHTML += `
+      <div onclick="inspectArtifactByIndex(${idx})" class="bg-surface-container-lowest rounded-xl p-2.5 border border-outline-variant/30 shadow-xs hover:border-primary/40 transition-all cursor-pointer group flex flex-col gap-2 artifact-card hover:shadow-md">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 bg-primary/10 rounded flex items-center justify-center text-primary shrink-0">
+            <span class="material-symbols-outlined text-[15px]">${icon}</span>
+          </div>
+          <div class="overflow-hidden flex-1">
+            <h3 class="text-xs font-semibold text-on-surface truncate group-hover:text-primary transition-colors">${art.title}</h3>
+            <p class="text-[10px] text-secondary truncate">Page ${art.page} • ${art.filename}</p>
+          </div>
+        </div>
+        <div class="w-full h-24 bg-surface-container rounded border border-outline-variant/20 overflow-hidden relative group-hover:shadow-inner transition-all flex items-center justify-center">
+          <img src="${art.url}" alt="${art.title}" class="w-full h-full object-contain mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" loading="lazy">
+          <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors"></div>
+        </div>
+        <button type="button" onclick="event.stopPropagation(); inspectArtifactByIndex(${idx})" class="w-full py-1.5 px-2 rounded-lg bg-surface-container hover:bg-primary hover:text-on-primary text-secondary text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer">
+          <span class="material-symbols-outlined text-[14px]">visibility</span>
+          <span>Inspect Exhibit</span>
+        </button>
+      </div>
+    `;
+  });
+
+  const tabTables = document.getElementById('tab-tables');
+  const tabCharts = document.getElementById('tab-charts');
+  if (tabTables) {
+    tabTables.innerHTML = `<span class="material-symbols-outlined text-sm">table_chart</span><span>Tables (${tableCount})</span>`;
+  }
+  if (tabCharts) {
+    tabCharts.innerHTML = `<span class="material-symbols-outlined text-sm">bar_chart</span><span>Charts (${chartCount})</span>`;
+  }
+}
+
+export async function inspectArtifactByIndex(idx) {
+  if (!currentArtifactList || currentArtifactList.length === 0) {
+    if (currentUploadedImages && currentUploadedImages.length > 0) {
+      currentArtifactList = currentUploadedImages.map((img, i) => {
+        const fname = img.split(/[/\\]/).pop();
+        const isTbl = fname.startsWith('table_');
+        const pMatch = fname.match(/_p(\d+)_/);
+        return {
+          index: i,
+          filename: fname,
+          url: `/api/v1/images/${fname}`,
+          title: `${isTbl ? 'Extracted Table' : 'Extracted Chart'} ${i + 1}`,
+          type: isTbl ? 'table' : 'chart',
+          page: pMatch ? pMatch[1] : 1,
+        };
+      });
+    } else {
+      await loadWorkspaceArtifacts();
+    }
+  }
+
+  if (!currentArtifactList || currentArtifactList.length === 0) {
+    showToast('No artifacts to inspect. Please upload a PDF first.');
+    return;
+  }
+
+  if (idx < 0) idx = 0;
+  if (idx >= currentArtifactList.length) idx = currentArtifactList.length - 1;
+  currentArtifactIndex = idx;
+
+  const item = currentArtifactList[idx];
   const modal = document.getElementById('artifact-modal');
   if (!modal) return;
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-page').textContent = page;
-  document.getElementById('modal-preview-text').textContent = title;
-  document.getElementById('modal-icon').textContent =
-    type === 'chart' ? 'bar_chart' : type === 'table' ? 'table_chart' : 'notes';
+
+  const titleElem = document.getElementById('modal-title');
+  const pageElem = document.getElementById('modal-page');
+  const counterElem = document.getElementById('modal-counter');
+  const imgElem = document.getElementById('modal-artifact-img');
+  const iconElem = document.getElementById('modal-icon');
+  const fullLink = document.getElementById('modal-full-img-link');
+
+  if (titleElem) titleElem.textContent = item.title;
+  if (pageElem) pageElem.textContent = `Source: ${item.filename} • PDF Page ${item.page}`;
+  if (counterElem) counterElem.textContent = `Exhibit ${idx + 1} of ${currentArtifactList.length}`;
+  if (iconElem) iconElem.textContent = item.type === 'chart' ? 'bar_chart' : 'table_chart';
+  if (imgElem) {
+    imgElem.src = item.url;
+    imgElem.alt = item.title;
+  }
+  if (fullLink) {
+    fullLink.href = item.url;
+  }
+
   modal.classList.remove('hidden');
+}
+
+export function navigateArtifact(delta) {
+  inspectArtifactByIndex(currentArtifactIndex + delta);
+}
+
+export async function inspectAllArtifacts() {
+  if (!currentArtifactList || currentArtifactList.length === 0) {
+    showToast('Loading exhibits for inspection...');
+    const loaded = await loadWorkspaceArtifacts();
+    if (!loaded || currentArtifactList.length === 0) {
+      showToast('No artifacts available to inspect. Please upload a PDF first.');
+      return;
+    }
+  }
+  inspectArtifactByIndex(0);
+}
+
+export function previewArtifact(title, page, type, url = '') {
+  if (url) {
+    const foundIdx = currentArtifactList.findIndex(a => a.url === url || a.filename === url.split('/').pop());
+    if (foundIdx !== -1) {
+      inspectArtifactByIndex(foundIdx);
+      return;
+    }
+  }
+  inspectAllArtifacts();
 }
 
 export function closeArtifactModal() {
   document.getElementById('artifact-modal')?.classList.add('hidden');
 }
+
+// Keyboard navigation for exhibit inspector modal
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('artifact-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    if (e.key === 'Escape') {
+      closeArtifactModal();
+    } else if (e.key === 'ArrowLeft') {
+      navigateArtifact(-1);
+    } else if (e.key === 'ArrowRight') {
+      navigateArtifact(1);
+    }
+  }
+});
 
 // DAG Modal
 export function showGraphDAGModal() {
@@ -196,51 +364,27 @@ export async function handleFileUpload(event) {
       document.getElementById('doc-card-pgcount').textContent = `${data.total_pages || 1} Pgs`;
       currentUploadedPdfName = file.name;
       currentUploadedImages = data.extracted_image_paths || [];
-      const artifactContainer = document.getElementById('artifact-cards-wrapper');
-
+      currentArtifactList = [];
       let tableCount = 0;
       let chartCount = 0;
+      currentUploadedImages.forEach((img, idx) => {
+        const filename = img.split(/[/\\]/).pop();
+        const isTable = filename.startsWith('table_');
+        if (isTable) tableCount++; else chartCount++;
+        const label = `${isTable ? 'Extracted Table' : 'Extracted Chart'} ${isTable ? tableCount : chartCount}`;
+        const pageMatch = filename.match(/_p(\d+)_/);
+        const pageNum = pageMatch ? pageMatch[1] : 1;
 
-      if (artifactContainer) {
-        artifactContainer.innerHTML = '';
-        currentUploadedImages.forEach((img, idx) => {
-          const filename = img.split(/[/\\]/).pop(); // Handle both Windows backslashes and POSIX forward slashes
-          const isTable = filename.startsWith('table_');
-          const isChart = !isTable;
-
-          if (isTable) tableCount++;
-          if (isChart) chartCount++;
-
-          const icon = isChart ? 'bar_chart' : 'table_chart';
-          const label = isChart ? 'Extracted Chart' : 'Extracted Table';
-
-          artifactContainer.innerHTML += `
-            <div class="bg-surface-container-lowest rounded-xl p-2.5 border border-outline-variant/30 shadow-xs hover:border-primary/40 transition-colors cursor-pointer group flex flex-col gap-2 artifact-card">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 bg-primary/10 rounded flex items-center justify-center text-primary">
-                  <span class="material-symbols-outlined text-[15px]">${icon}</span>
-                </div>
-                <div class="overflow-hidden flex-1">
-                  <h3 class="text-xs font-semibold text-on-surface truncate group-hover:text-primary transition-colors">${label} ${isChart ? chartCount : tableCount}</h3>
-                  <p class="text-[10px] text-secondary truncate">${filename}</p>
-                </div>
-              </div>
-              <div class="w-full h-24 bg-surface-container rounded border border-outline-variant/20 overflow-hidden relative group-hover:shadow-inner transition-all flex items-center justify-center">
-                <img src="/api/v1/images/${filename}" alt="Extracted Figure" class="w-full h-full object-contain mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity">
-                <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors"></div>
-              </div>
-            </div>
-          `;
+        currentArtifactList.push({
+          index: idx,
+          filename: filename,
+          url: `/api/v1/images/${filename}`,
+          title: label,
+          type: isTable ? 'table' : 'chart',
+          page: pageNum,
         });
-      }
-      const tabTables = document.getElementById('tab-tables');
-      if (tabTables) {
-        tabTables.innerHTML = `<span class="material-symbols-outlined text-sm">table_chart</span><span>Tables (${tableCount})</span>`;
-      }
-      const tabCharts = document.getElementById('tab-charts');
-      if (tabCharts) {
-        tabCharts.innerHTML = `<span class="material-symbols-outlined text-sm">bar_chart</span><span>Charts (${chartCount})</span>`;
-      }
+      });
+      renderArtifactCards(currentArtifactList);
       showToast(
         `✅ Ingestion complete: ${data.chunks_indexed ?? data.total_chunks ?? 0} chunks & ${data.images_extracted ?? data.total_images ?? 0} figures indexed!`
       );
@@ -445,7 +589,12 @@ window.switchCorpusTab = switchCorpusTab;
 window.jumpToPage = jumpToPage;
 window.copyMarkdownMemo = copyMarkdownMemo;
 window.previewArtifact = previewArtifact;
+window.inspectArtifactByIndex = inspectArtifactByIndex;
+window.navigateArtifact = navigateArtifact;
+window.inspectAllArtifacts = inspectAllArtifacts;
 window.closeArtifactModal = closeArtifactModal;
+window.loadWorkspaceArtifacts = loadWorkspaceArtifacts;
+window.renderArtifactCards = renderArtifactCards;
 window.showGraphDAGModal = showGraphDAGModal;
 window.closeDAGModal = closeDAGModal;
 window.handleFileUpload = handleFileUpload;
@@ -485,6 +634,10 @@ function openCitationsPanel(encodedCitations) {
         <p class="text-[11px] text-secondary line-clamp-3">${textContent}</p>
         <div class="mt-2 pt-2 border-t border-surface-container flex justify-between items-center text-[10px] font-label">
           <span class="text-emerald-700 font-medium">Faithfulness: ${score}%</span>
+          <span class="text-primary font-semibold flex items-center gap-0.5 hover:underline">
+            <span class="material-symbols-outlined text-xs">visibility</span>
+            <span>Inspect</span>
+          </span>
         </div>
       `;
       container.appendChild(card);
@@ -512,12 +665,60 @@ function closeCitationsPanel() {
 
 function openCitationContent(content, title, score, rawData) {
   const modal = document.getElementById('citation-modal');
-  document.getElementById('citation-modal-title').textContent = title;
-  document.getElementById('citation-modal-content').textContent = content;
-  document.getElementById('citation-modal-score').textContent = `Confidence Score: ${score}%`;
+  const modalTitle = document.getElementById('citation-modal-title');
+  const modalContent = document.getElementById('citation-modal-content');
+  const modalScore = document.getElementById('citation-modal-score');
+
+  if (modalTitle) modalTitle.textContent = title;
+  if (modalScore) modalScore.textContent = `Confidence Score: ${score}%`;
+  
+  if (modalContent) {
+    modalContent.innerHTML = '';
+    
+    // Check if rawData or title mentions an image filename
+    let imgName = null;
+    if (rawData) {
+      if (typeof rawData.source === 'string' && rawData.source.match(/\.(png|jpe?g|webp)$/i)) {
+        imgName = rawData.source.split(/[/\\]/).pop();
+      } else if (typeof rawData.image_name === 'string') {
+        imgName = rawData.image_name;
+      } else if (typeof rawData.path === 'string') {
+        imgName = rawData.path.split(/[/\\]/).pop();
+      }
+    }
+    if (!imgName) {
+      const strToSearch = `${title} ${content} ${JSON.stringify(rawData || {})}`;
+      const imgMatch = strToSearch.match(/(?:chart|img|table)_[^\s"'<>\\]+\.(?:png|jpe?g|webp)/i);
+      if (imgMatch) {
+        imgName = imgMatch[0];
+      }
+    }
+    
+    if (imgName) {
+      const imgBlock = document.createElement('div');
+      imgBlock.className = 'mb-4 flex flex-col items-center p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 gap-2';
+      imgBlock.innerHTML = `
+        <div class="relative max-w-full flex items-center justify-center">
+          <img src="/api/v1/images/${imgName}" alt="${title}" class="max-h-[40vh] max-w-full object-contain rounded-lg shadow-xs" />
+        </div>
+        <div class="flex items-center gap-3 mt-1">
+          <span class="text-[10px] text-secondary font-mono">${imgName}</span>
+          <button type="button" onclick="closeCitationModal(); previewArtifact('${title}', 1, 'chart', '/api/v1/images/${imgName}')" class="px-2.5 py-1 rounded-md bg-primary text-on-primary text-[11px] font-semibold hover:bg-primary-container transition-colors flex items-center gap-1 shadow-xs cursor-pointer">
+            <span class="material-symbols-outlined text-xs">zoom_in</span>
+            <span>Open in Full Inspector</span>
+          </button>
+        </div>
+      `;
+      modalContent.appendChild(imgBlock);
+    }
+    
+    const textElem = document.createElement('div');
+    textElem.className = 'text-xs text-on-surface font-body leading-relaxed whitespace-pre-wrap';
+    textElem.textContent = content;
+    modalContent.appendChild(textElem);
+  }
   
   modal.classList.remove('hidden');
-  
   logTelemetry('open_citation_modal', { title, score });
 }
 
@@ -625,3 +826,11 @@ document.addEventListener('click', (event) => {
     dropdown.classList.add('hidden');
   }
 });
+
+// Automatically load workspace artifacts on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => loadWorkspaceArtifacts());
+} else {
+  loadWorkspaceArtifacts();
+}
+
