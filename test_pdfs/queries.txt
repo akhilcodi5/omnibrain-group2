@@ -16,3 +16,5 @@ According to the Condensed Consolidated Statements of Cash Flows, what was the t
 Analyze the trend in Gaming revenue performance between Q3 FY26 and Q4 FY26 versus its year-over-year growth. What explanation does management provide for the quarter-over-quarter decline?
 
 In the Reconciliation of GAAP to Non-GAAP Outlook section at the end of the document, what line items connect GAAP Gross Margin directly to Non-GAAP Gross Margin, and what footnote rule applies to Q1 FY27 Non-GAAP metrics?
+
+Compare the Research and Development stock-based compensation expense between Q4 FY26 and Q4 FY25 as shown in Note (B). By how much did it increase?
