@@ -164,6 +164,7 @@ class FinancialDatabase:
         """Dynamically ingest extracted 2D PDF tables into SQLite."""
         import re
         clean_pdf_name = re.sub(r'[^a-zA-Z0-9_]', '_', os.path.splitext(os.path.basename(pdf_name))[0]).lower()
+        table_metadata = []
         
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -207,7 +208,15 @@ class FinancialDatabase:
                             padded_row.append("")
                         padded_row = padded_row[:len(unique_headers)]
                         cursor.execute(insert_sql, padded_row)
+                        
+                    table_metadata.append({
+                        "page_number": page_idx + 1,
+                        "table_name": table_name,
+                        "columns": unique_headers,
+                        "rows_inserted": len(table[1:])
+                    })
             conn.commit()
+        return table_metadata
 
 
     def execute_query(self, sql_query: str) -> List[Dict[str, Any]]:

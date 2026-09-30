@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html class="h-full bg-surface" lang="en">
+
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>OmniBrain Quant Workspace</title>
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>OmniBrain Quant Workspace</title>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Public+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography"></script>
+  <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
       theme: {
@@ -81,421 +85,396 @@
       },
     }
   </script>
-<style>
+  <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
     }
+
     .material-symbols-outlined.fill {
       font-variation-settings: 'FILL' 1;
     }
+
     /* Custom refined scrollbar */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
     }
+
     ::-webkit-scrollbar-track {
       background: transparent;
     }
+
     ::-webkit-scrollbar-thumb {
       background: #c3c6d5;
       border-radius: 4px;
     }
+
     ::-webkit-scrollbar-thumb:hover {
       background: #737784;
     }
+
     @media print {
-      header, aside, #swarm-panel, #global-toast { display: none !important; }
-      #memo-aside { width: 100% !important; border: none !important; box-shadow: none !important; }
+
+      header,
+      aside,
+      #swarm-panel,
+      #global-toast {
+        display: none !important;
+      }
+
+      #memo-aside {
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
     }
   </style>
 </head>
-<body class="h-full font-body text-on-surface bg-surface flex flex-col antialiased selection:bg-primary-fixed selection:text-primary overflow-hidden">
-<!-- ================= TOP NAV BAR (Shared Component Anchored) ================= -->
-<header class="bg-surface-container-lowest flex justify-between items-center w-full px-5 h-16 shrink-0 z-50 border-b border-surface-container shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-<!-- Left Section: Brand & Context Switcher -->
-<div class="flex items-center gap-6">
-<div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
-<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
-<span class="material-symbols-outlined fill text-xl">hub</span>
-</div>
-<span class="font-headline text-xl font-bold tracking-tight text-primary">OmniBrain</span>
-<span class="font-label text-xs uppercase tracking-wider font-semibold text-secondary ml-1 bg-surface-container px-2 py-0.5 rounded">Quant</span>
-</div>
 
-<!-- Active Ingest Document Status Pill -->
-<div class="hidden xl:flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 px-2.5 py-1 rounded-full text-xs" id="active-doc-pill">
-<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-<span class="material-symbols-outlined text-primary text-sm">picture_as_pdf</span>
-<span class="font-medium text-on-surface" id="active-doc-name">No Document</span>
-<span class="text-secondary" id="active-doc-pages"></span>
-<span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide" id="active-doc-badge">Processed</span>
-</div>
-</div>
-<!-- Right Section: Model & Agent Stack Architecture Badges -->
-<div class="flex items-center gap-3">
-  <!-- Interactive Model Architecture Pills -->
-  <div class="hidden lg:flex items-center bg-surface-container-low border border-outline-variant/40 rounded-xl p-1 gap-1 text-[11px] font-label shadow-xs">
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="Supervisor Node: Dynamic multi-agent routing with hard loop safety ceiling (agents/supervisor.py)">
-      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-      <span class="font-semibold text-secondary">Router:</span>
-      <span class="font-bold text-primary">LangGraph</span>
+<body
+  class="h-full font-body text-on-surface bg-surface flex flex-col antialiased selection:bg-primary-fixed selection:text-primary overflow-hidden">
+  <!-- ================= TOP NAV BAR (Shared Component Anchored) ================= -->
+  <header
+    class="bg-surface-container-lowest flex justify-between items-center w-full px-5 h-16 shrink-0 z-50 border-b border-surface-container shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+    <!-- Left Section: Brand & Context Switcher -->
+    <div class="flex-1 flex justify-start">
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
+            <span class="material-symbols-outlined fill text-xl">hub</span>
+          </div>
+          <span class="font-headline text-xl font-bold tracking-tight text-primary">OmniBrain</span>
+          <span class="font-label text-xs uppercase tracking-wider font-semibold text-secondary ml-1 bg-surface-container px-2 py-0.5 rounded">Quant</span>
+        </div>
+
+        <!-- Active Ingest Document Status Pill -->
+        <div class="hidden xl:flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 px-2.5 py-1 rounded-full text-xs" id="active-doc-pill">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="material-symbols-outlined text-primary text-sm">picture_as_pdf</span>
+          <span class="font-medium text-on-surface" id="active-doc-name">No Document</span>
+          <span class="text-secondary" id="active-doc-pages"></span>
+          <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide" id="active-doc-badge">Processed</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Navigation Links & Meta Info (Centered) -->
+    <div class="flex-1 flex justify-center">
+      <div class="flex items-center gap-6">
+        <button id="nav-home-btn" onclick="switchMainTab('home')" class="text-sm font-semibold text-primary border-b-2 border-primary pb-1 transition-colors">Home</button>
+        <button id="nav-about-btn" onclick="switchMainTab('about')" class="text-sm font-semibold text-secondary hover:text-on-surface border-b-2 border-transparent hover:border-surface-variant pb-1 transition-colors">About</button>
+      </div>
     </div>
 
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="VisionAgent: Structured chart JSON extraction, CAGR & YoY trend modeling (gemini-flash-lite-latest / GPT-4o)">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-      <span class="font-semibold text-secondary">Vision:</span>
-      <span class="font-bold text-emerald-700">Gemini / GPT-4o</span>
+    <!-- Right Section: Export Dropdown -->
+    <div class="flex-1 flex justify-end">
+      <div class="relative inline-block text-left">
+        <div>
+          <button type="button" onclick="toggleExportMenu()" class="inline-flex justify-center w-full rounded-md border border-outline-variant/40 shadow-sm px-4 py-2 bg-surface-container-lowest text-sm font-medium text-on-surface hover:bg-surface-container-low focus:outline-none transition-colors" id="export-menu-button" aria-expanded="true" aria-haspopup="true">
+            <span class="material-symbols-outlined text-sm mr-2">download</span>
+            Export Chat
+            <span class="material-symbols-outlined text-sm ml-2">expand_more</span>
+          </button>
+        </div>
+        <div id="export-dropdown" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-surface-container-lowest ring-1 ring-black ring-opacity-5 hidden focus:outline-none z-50">
+          <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="export-menu-button">
+            <button onclick="exportChat('pdf')" class="text-on-surface hover:bg-surface-container-low hover:text-primary block px-4 py-2 text-sm w-full text-left flex items-center gap-2 transition-colors" role="menuitem">
+              <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Export as PDF
+            </button>
+            <button onclick="exportChat('md')" class="text-on-surface hover:bg-surface-container-low hover:text-primary block px-4 py-2 text-sm w-full text-left flex items-center gap-2 transition-colors" role="menuitem">
+              <span class="material-symbols-outlined text-sm">markdown</span> Export as MD
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+  </header>
 
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="SearchAgent & Self-RAG: Dense vector search over 500-token chunks with context grading & query rewriting">
-      <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-      <span class="font-semibold text-secondary">Vector RAG:</span>
-      <span class="font-bold text-blue-700">Qdrant</span>
+  <!-- ================= MAIN WORKSPACE: 3-PANEL INTUITIVE LAYOUT ================= -->
+  <main class="flex-1 flex overflow-hidden bg-surface" id="workspace">
+    <!-- PANEL 1: DOCUMENT INGEST & CORPUS EXPLORER (320px) -->
+    <aside class="w-80 bg-surface-container-low flex flex-col shrink-0 border-r border-surface-container transition-all"
+      id="corpus-aside">
+      <!-- Section Header -->
+      <div class="p-3.5 pb-2 border-b border-surface-container-high/60 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg">source_environment</span>
+          <h2 class="font-label text-xs uppercase tracking-wider font-semibold text-on-surface">Corpus &amp; Multimodal
+            Ingest</h2>
+        </div>
+        <span class="text-[10px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-label font-bold">LIVE</span>
+      </div>
+      <!-- Tab Strip -->
+      <div class="px-3 pt-2 pb-1 flex gap-1 border-b border-surface-container text-xs font-label" id="corpus-tabs">
+        <button onclick="filterCorpus('all', this)"
+          class="corpus-tab-btn px-2.5 py-1.5 text-primary font-medium bg-surface-container-lowest rounded-md shadow-xs flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">description</span>
+          <span>Document</span>
+        </button>
+        <button onclick="filterCorpus('table', this)"
+          class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">table_chart</span>
+          <span id="tab-tables">Tables (0)</span>
+        </button>
+        <button onclick="filterCorpus('chart', this)"
+          class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">bar_chart</span>
+          <span id="tab-charts">Charts (0)</span>
+        </button>
+      </div>
+      <!-- Explorer Content Area -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3">
+        <!-- Document Card Preview -->
+        <div class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-xs">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <div
+                class="w-9 h-11 bg-primary/10 rounded flex flex-col items-center justify-center text-primary shrink-0 border border-primary/20">
+                <span class="material-symbols-outlined text-base">picture_as_pdf</span>
+                <span class="text-[8px] font-bold tracking-tight">PDF</span>
+              </div>
+              <div class="overflow-hidden">
+                <h3 class="text-xs font-semibold text-on-surface truncate" id="doc-card-title">No Document Uploaded</h3>
+                <p class="text-[11px] text-secondary" id="doc-card-subtitle"></p>
+              </div>
+            </div>
+            <span class="text-[10px] font-label text-secondary bg-surface-container px-1.5 py-0.5 rounded"
+              id="doc-card-pgcount"></span>
+          </div>
+          <!-- Page Jump & OCR Status -->
+          <div
+            class="flex items-center justify-between pt-2 border-t border-surface-container text-[11px] text-secondary">
+            <span class="hidden items-center gap-1 text-secondary" id="ocr-status-container">
+              <span class="material-symbols-outlined text-xs fill" id="ocr-status-icon">pending</span>
+              <span id="ocr-status">OCR Pending</span>
+            </span>
+
+          </div>
+        </div>
+        <!-- Parsed Multimodal Assets List -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-label text-secondary px-1">
+            <span class="uppercase tracking-wider font-semibold text-[10px]">High-Salience Artifacts</span>
+            <span class="text-[11px] text-primary cursor-pointer hover:underline"
+              onclick="showToast('Inspecting all artifacts...')">Inspect All</span>
+          </div>
+          <div id="artifact-cards-wrapper" class="space-y-2">
+          </div>
+        </div>
+        <!-- Upload New Document Drag & Drop Area -->
+        <label
+          class="border-2 border-dashed border-outline-variant/60 rounded-xl p-4 text-center hover:bg-surface-container transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5 block">
+          <input type="file" id="pdf-file-input" accept=".pdf,.png,.jpg,.jpeg" class="hidden"
+            onchange="handleFileUpload(event)" />
+          <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+            <span class="material-symbols-outlined text-lg">upload_file</span>
+          </div>
+          <span class="text-xs font-medium text-on-surface">Upload Ingest Target</span>
+          <span class="text-[10px] text-secondary">Drop SEC Filings, PDF Earnings, or Excel models</span>
+        </label>
+      </div>
+      <!-- Sidebar Footer (Shared Component Token Compliance) -->
+      <div
+        class="p-3 border-t border-surface-container bg-surface-container-low flex items-center justify-between text-xs font-label text-secondary">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm">verified_user</span>
+          <span class="font-medium text-[11px]">System: Nominal (v2.4.1)</span>
+        </div>
+        <a class="hover:text-on-surface flex items-center gap-0.5 text-[11px]" href="/docs" target="_blank">
+          <span class="material-symbols-outlined text-sm">help_outline</span>
+          <span>Docs</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- PANEL 2: CENTER / SWARM ORCHESTRATOR & CONVERSATION STREAM (FLEX-1) -->
+    <section class="flex-1 flex flex-col bg-surface overflow-hidden relative" id="swarm-panel">
+      <!-- Agent Activity Stream & Trace -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col" id="chat-stream">
+      </div>
+
+      <!-- Bottom Query Bar -->
+      <div class="p-4 bg-surface shrink-0 pb-8">
+        <div class="max-w-3xl mx-auto w-full">
+          <!-- Search / Prompt Input Container -->
+          <div class="relative flex items-center shadow-sm">
+            <div class="absolute left-3.5 flex items-center pointer-events-none text-primary">
+              <span class="material-symbols-outlined text-xl">auto_awesome</span>
+            </div>
+            <input id="query-input" onkeydown="if(event.key==='Enter') executeAnalystQuery()"
+              class="w-full pl-11 pr-24 py-3.5 bg-surface-container-lowest text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70"
+              placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&D headcount vs amortization')..." type="text"
+              value="" />
+            <button id="execute-btn" onclick="executeAnalystQuery()"
+              class="absolute right-2 px-3 py-2 bg-primary text-on-primary text-xs font-semibold rounded-lg hover:bg-primary-container transition-all flex items-center gap-1 shadow-xs active:scale-95">
+              <span>Execute</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+  </main>
+
+  <!-- ================= ABOUT PAGE ================= -->
+  <main class="flex-1 overflow-y-auto bg-surface hidden" id="about-page">
+    <div class="max-w-4xl mx-auto p-8 space-y-8">
+      <div class="text-center space-y-4">
+        <h1 class="text-4xl font-headline font-bold text-on-surface">About OmniBrain Quant</h1>
+        <p class="text-lg text-secondary max-w-2xl mx-auto">An advanced agentic AI orchestration platform designed for Wall Street-grade financial analysis using Multi-Modal RAG.</p>
+      </div>
+      
+      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-xl font-semibold mb-4 text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined">architecture</span> System Architecture
+        </h2>
+        <div class="space-y-4 text-sm text-on-surface leading-relaxed">
+          <p><strong>OmniBrain Quant</strong> leverages a state-of-the-art <strong>LangGraph Supervisor Orchestrator</strong> to seamlessly route analyst queries across specialized autonomous agents.</p>
+          <ul class="list-disc pl-5 space-y-2">
+            <li><strong>SearchAgent (Self-RAG):</strong> Performs dense vector retrieval on high-density financial documents (SEC 10-K, Earnings Transcripts) with an integrated reflection loop to iteratively refine search queries until the perfect context is found.</li>
+            <li><strong>VisionAgent (Multi-Modal):</strong> Uses advanced Vision-Language Models (VLMs) like Google Gemini 3.5 Flash Lite to extract tabular data, charts, and diagrams with localized bounding boxes.</li>
+            <li><strong>SQLAgent:</strong> Synthesizes Natural Language to SQL, querying structured tabular metrics directly from DuckDB or SQLite for precise quantitative comparisons.</li>
+            <li><strong>Synthesizer & NeMo Guardrails:</strong> Merges cross-modal data into highly polished investment memorandums. Enforces absolute deterministic grounding and faithfulness via NVIDIA NeMo Guardrails to prevent hallucinations.</li>
+          </ul>
+        </div>
+      </div>
     </div>
+  </main>
 
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="SQLAgent: Text-to-SQL engine resolving stock pricing, P/E multiples, and market cap metrics">
-      <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-      <span class="font-semibold text-secondary">SQL:</span>
-      <span class="font-bold text-purple-700">Text-to-SQL</span>
-    </div>
-
-    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-on-surface border border-outline-variant/20 shadow-xs cursor-help" title="Ingestion Pipeline: PyMuPDF parses 10-K text chunks & extracts visual figures for FastAPI async serving">
-      <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-      <span class="font-semibold text-secondary">Ingest:</span>
-      <span class="font-bold text-indigo-700">PyMuPDF</span>
+  <!-- ================= MODALS & TOAST NOTIFICATIONS ================= -->
+  <!-- Artifact Bounding Box Preview Modal -->
+  <div id="artifact-modal"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div
+      class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-xl" id="modal-icon">image</span>
+          <div>
+            <h3 class="text-sm font-semibold text-on-surface" id="modal-title">Artifact Title</h3>
+            <p class="text-xs text-secondary" id="modal-page">PDF Page Citation</p>
+          </div>
+        </div>
+        <button onclick="closeArtifactModal()"
+          class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-surface-container-lowest"
+        id="modal-body">
+        <div
+          class="w-full max-w-lg aspect-video bg-surface-container-low rounded-xl border border-dashed border-outline-variant flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
+          <div
+            class="absolute inset-4 border-2 border-emerald-500 bg-emerald-500/10 rounded-lg flex items-start justify-between p-2">
+            <span class="text-[10px] bg-emerald-600 text-white font-label px-1.5 py-0.5 rounded font-bold">Bounding Box
+              • Grounded</span>
+            <span class="text-[10px] text-emerald-800 font-mono">100% Grounded</span>
+          </div>
+          <span class="material-symbols-outlined text-4xl text-primary mb-2">query_stats</span>
+          <p class="text-xs font-semibold text-on-surface" id="modal-preview-text">Extracted Visual Chart Exhibit</p>
+          <p class="text-[11px] text-secondary mt-1">Grounding verified against SEC Edgar 10-K document store.</p>
+        </div>
+      </div>
+      <div
+        class="p-3 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs font-label">
+        <span class="text-emerald-700 font-medium">Confidence Score: 0.98</span>
+        <button onclick="closeArtifactModal()"
+          class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold">Done</button>
+      </div>
     </div>
   </div>
 
-  <!-- Architecture & Model Map Modal Button -->
-  <button onclick="showGraphDAGModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 text-xs font-label font-semibold transition-all shadow-xs cursor-pointer" title="View Full System Architecture & Model Responsibilities">
-    <span class="material-symbols-outlined text-sm">account_tree</span>
-    <span>Model Map</span>
-  </button>
-</div>
-</header>
-
-<!-- ================= MAIN WORKSPACE: 3-PANEL INTUITIVE LAYOUT ================= -->
-<main class="flex-1 flex overflow-hidden bg-surface" id="workspace">
-<!-- PANEL 1: DOCUMENT INGEST & CORPUS EXPLORER (320px) -->
-<aside class="w-80 bg-surface-container-low flex flex-col shrink-0 border-r border-surface-container transition-all" id="corpus-aside">
-<!-- Section Header -->
-<div class="p-3.5 pb-2 border-b border-surface-container-high/60 flex items-center justify-between">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-lg">source_environment</span>
-<h2 class="font-label text-xs uppercase tracking-wider font-semibold text-on-surface">Corpus &amp; Multimodal Ingest</h2>
-</div>
-<span class="text-[10px] bg-primary-fixed text-primary px-1.5 py-0.5 rounded font-label font-bold">LIVE</span>
-</div>
-<!-- Tab Strip -->
-<div class="px-3 pt-2 pb-1 flex gap-1 border-b border-surface-container text-xs font-label" id="corpus-tabs">
-<button onclick="filterCorpus('all', this)" class="corpus-tab-btn px-2.5 py-1.5 text-primary font-medium bg-surface-container-lowest rounded-md shadow-xs flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">description</span>
-<span>Document</span>
-</button>
-<button onclick="filterCorpus('table', this)" class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">table_chart</span>
-<span id="tab-tables">Tables (0)</span>
-</button>
-<button onclick="filterCorpus('chart', this)" class="corpus-tab-btn px-2 py-1.5 text-secondary hover:text-on-surface hover:bg-surface-container transition-colors rounded-md flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">bar_chart</span>
-<span id="tab-charts">Charts (0)</span>
-</button>
-</div>
-<!-- Explorer Content Area -->
-<div class="flex-1 overflow-y-auto p-3 space-y-3">
-<!-- Document Card Preview -->
-<div class="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/30 shadow-xs">
-<div class="flex items-start justify-between gap-2 mb-2">
-<div class="flex items-center gap-2">
-<div class="w-9 h-11 bg-primary/10 rounded flex flex-col items-center justify-center text-primary shrink-0 border border-primary/20">
-<span class="material-symbols-outlined text-base">picture_as_pdf</span>
-<span class="text-[8px] font-bold tracking-tight">PDF</span>
-</div>
-<div class="overflow-hidden">
-<h3 class="text-xs font-semibold text-on-surface truncate" id="doc-card-title">No Document Uploaded</h3>
-<p class="text-[11px] text-secondary" id="doc-card-subtitle"></p>
-</div>
-</div>
-<span class="text-[10px] font-label text-secondary bg-surface-container px-1.5 py-0.5 rounded" id="doc-card-pgcount"></span>
-</div>
-<!-- Page Jump & OCR Status -->
-<div class="flex items-center justify-between pt-2 border-t border-surface-container text-[11px] text-secondary">
-<span class="hidden items-center gap-1 text-secondary" id="ocr-status-container">
-<span class="material-symbols-outlined text-xs fill" id="ocr-status-icon">pending</span>
-<span id="ocr-status">OCR Pending</span>
-</span>
-
-</div>
-</div>
-<!-- Parsed Multimodal Assets List -->
-<div class="space-y-2">
-<div class="flex items-center justify-between text-xs font-label text-secondary px-1">
-<span class="uppercase tracking-wider font-semibold text-[10px]">High-Salience Artifacts</span>
-<span class="text-[11px] text-primary cursor-pointer hover:underline" onclick="showToast('Inspecting all artifacts...')">Inspect All</span>
-</div>
-<div id="artifact-cards-wrapper" class="space-y-2">
-</div>
-</div>
-<!-- Upload New Document Drag & Drop Area -->
-<label class="border-2 border-dashed border-outline-variant/60 rounded-xl p-4 text-center hover:bg-surface-container transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5 block">
-<input type="file" id="pdf-file-input" accept=".pdf,.png,.jpg,.jpeg" class="hidden" onchange="handleFileUpload(event)"/>
-<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-lg">upload_file</span>
-</div>
-<span class="text-xs font-medium text-on-surface">Upload Ingest Target</span>
-<span class="text-[10px] text-secondary">Drop SEC Filings, PDF Earnings, or Excel models</span>
-</label>
-</div>
-<!-- Sidebar Footer (Shared Component Token Compliance) -->
-<div class="p-3 border-t border-surface-container bg-surface-container-low flex items-center justify-between text-xs font-label text-secondary">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-sm">verified_user</span>
-<span class="font-medium text-[11px]">System: Nominal (v2.4.1)</span>
-</div>
-<a class="hover:text-on-surface flex items-center gap-0.5 text-[11px]" href="/docs" target="_blank">
-<span class="material-symbols-outlined text-sm">help_outline</span>
-<span>Docs</span>
-</a>
-</div>
-</aside>
-
-<!-- PANEL 2: CENTER / SWARM ORCHESTRATOR & CONVERSATION STREAM (FLEX-1) -->
-<section class="flex-1 flex flex-col bg-surface overflow-hidden relative" id="swarm-panel">
-<!-- Agent Activity Stream & Trace -->
-<div class="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col" id="chat-stream">
-</div>
-
-<!-- Bottom Query Bar -->
-<div class="p-4 bg-surface shrink-0 pb-8">
-  <div class="max-w-3xl mx-auto w-full">
-    <!-- Search / Prompt Input Container -->
-    <div class="relative flex items-center shadow-sm">
-      <div class="absolute left-3.5 flex items-center pointer-events-none text-primary">
-        <span class="material-symbols-outlined text-xl">auto_awesome</span>
+  <!-- Graph DAG Modal -->
+  <div id="dag-modal"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div
+      class="bg-surface-container-lowest rounded-2xl max-w-xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden">
+      <div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-xl">schema</span>
+          <h3 class="text-sm font-semibold text-on-surface">LangGraph Supervisor State Graph</h3>
+        </div>
+        <button onclick="closeDAGModal()"
+          class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
       </div>
-      <input id="query-input" onkeydown="if(event.key==='Enter'){event.preventDefault();executeAnalystQuery();}" class="w-full pl-11 pr-24 py-3.5 bg-surface-container-lowest text-on-surface text-sm rounded-xl border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-secondary/70" placeholder="Ask or instruct the swarm (e.g. 'Reconcile R&D headcount vs amortization')..." type="text" value=""/>
-      <button id="execute-btn" onclick="executeAnalystQuery()" class="absolute right-2 px-3 py-2 bg-primary text-on-primary text-xs font-semibold rounded-lg hover:bg-primary-container transition-all flex items-center gap-1 shadow-xs active:scale-95">
-        <span>Execute</span>
-        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+      <div class="p-6 font-mono text-xs text-on-surface space-y-3 bg-surface-container-lowest">
+        <div class="p-3 bg-surface-container-low rounded-lg border border-surface-container">
+          <p class="font-bold text-primary mb-1">StateGraph Flow:</p>
+          <p class="text-secondary">[START] ➔ <strong>Supervisor</strong></p>
+          <p class="text-secondary">├─► <strong>VisionAgent</strong> (VLM: GPT-4o / LLaVA)</p>
+          <p class="text-secondary">├─► <strong>SearchAgent</strong> (Vector: Qdrant + Self-RAG)</p>
+          <p class="text-secondary">├─► <strong>SQLAgent</strong> (DuckDB WASM / SQLite)</p>
+          <p class="text-secondary">└─► <strong>Synthesizer</strong> (NeMo Guardrail Filter) ➔ [END]</p>
+        </div>
+        <p class="text-secondary text-[11px]">Cyclic graph with deterministic grounding check and maximum recursion
+          limit guardrail.</p>
+      </div>
+      <div class="p-3 bg-surface-container-low border-t border-surface-container flex justify-end">
+        <button onclick="closeDAGModal()"
+          class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Citations Side Panel -->
+  <div id="citations-side-panel" class="fixed top-0 right-0 h-full w-96 bg-surface-container-lowest border-l border-surface-container shadow-2xl transform translate-x-full transition-transform duration-300 z-[60] flex flex-col hidden">
+    <div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-xl">library_books</span>
+        <h3 class="text-sm font-semibold text-on-surface">Citations Index</h3>
+      </div>
+      <button onclick="closeCitationsPanel()" class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined text-xl">close</span>
       </button>
     </div>
-  </div>
-</div>
-</section>
-
-
-</main>
-
-<!-- ================= MODALS & TOAST NOTIFICATIONS ================= -->
-<!-- Artifact Bounding Box Preview Modal -->
-<div id="artifact-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-<div class="bg-surface-container-lowest rounded-2xl max-w-2xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-<div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-xl" id="modal-icon">image</span>
-<div>
-<h3 class="text-sm font-semibold text-on-surface" id="modal-title">Artifact Title</h3>
-<p class="text-xs text-secondary" id="modal-page">PDF Page Citation</p>
-</div>
-</div>
-<button onclick="closeArtifactModal()" class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
-<span class="material-symbols-outlined text-xl">close</span>
-</button>
-</div>
-<div class="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-surface-container-lowest" id="modal-body">
-<div class="w-full max-w-lg aspect-video bg-surface-container-low rounded-xl border border-dashed border-outline-variant flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
-<div class="absolute inset-4 border-2 border-emerald-500 bg-emerald-500/10 rounded-lg flex items-start justify-between p-2">
-<span class="text-[10px] bg-emerald-600 text-white font-label px-1.5 py-0.5 rounded font-bold">Bounding Box • Grounded</span>
-<span class="text-[10px] text-emerald-800 font-mono">100% Grounded</span>
-</div>
-<span class="material-symbols-outlined text-4xl text-primary mb-2">query_stats</span>
-<p class="text-xs font-semibold text-on-surface" id="modal-preview-text">Extracted Visual Chart Exhibit</p>
-<p class="text-[11px] text-secondary mt-1">Grounding verified against SEC Edgar 10-K document store.</p>
-</div>
-</div>
-<div class="p-3 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs font-label">
-<span class="text-emerald-700 font-medium">Confidence Score: 0.98</span>
-<button onclick="closeArtifactModal()" class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold">Done</button>
-</div>
-</div>
-</div>
-
-<!-- Graph DAG & Model Architecture Modal -->
-<div id="dag-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-<div class="bg-surface-container-lowest rounded-2xl max-w-3xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-<!-- Modal Header -->
-<div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between shrink-0">
-  <div class="flex items-center gap-2.5">
-    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-      <span class="material-symbols-outlined text-lg">account_tree</span>
-    </div>
-    <div>
-      <h3 class="text-sm font-bold text-on-surface">OmniBrain: Multi-Modal Agentic Architecture &amp; Model Map</h3>
-      <p class="text-[11px] text-secondary font-label">End-to-End Orchestration &amp; Sub-Agent Technical Responsibilities</p>
+    <div id="citations-list-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+      <!-- Citations will be dynamically injected here -->
     </div>
   </div>
-  <button onclick="closeDAGModal()" class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer">
-    <span class="material-symbols-outlined text-xl">close</span>
-  </button>
-</div>
 
-<!-- Modal Body (Scrollable) -->
-<div class="p-5 overflow-y-auto space-y-4 text-xs font-body text-on-surface">
-  <!-- Executive Overview Callout Box -->
-  <div class="p-4 bg-primary/5 border border-primary/15 rounded-xl space-y-2">
-    <p class="font-semibold text-primary text-sm flex items-center gap-1.5">
-      <span class="material-symbols-outlined text-base">info</span>
-      <span>System Overview</span>
-    </p>
-    <p class="text-secondary leading-relaxed">
-      <strong>OmniBrain</strong> is an Agentic Multi-Modal Intelligence platform designed to analyze complex corporate financial filings like 10-K annual reports.
-    </p>
-    <p class="text-secondary leading-relaxed">
-      Built over two phases, the system first establishes a multi-modal ingestion pipeline using <strong>PyMuPDF</strong> to parse text and isolate financial charts, indexing them in a <strong>Qdrant Vector Database</strong> and serving them via an asynchronous <strong>FastAPI</strong> backend. The core intelligence relies on a stateful, cyclic <strong>LangGraph</strong> workflow orchestrated by a <strong>Supervisor Node</strong> for dynamic task routing and loop safety. This Supervisor coordinates targeted sub-agents: a <strong>SearchAgent</strong> for vector retrieval, <strong>Self-RAG</strong> for context grading, a <strong>SQLAgent</strong> for quantitative queries, and a <strong>VisionAgent</strong> for interpreting financial charts. All of this feeds into an interactive UI that displays real-time agent thought processes, chart citations, and comprehensive investment memos.
-    </p>
-  </div>
-
-  <!-- Model Responsibility Grid -->
-  <div>
-    <h4 class="font-label text-xs uppercase tracking-wider font-bold text-secondary mb-2.5">Which Model &amp; Engine Handles What</h4>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-      <!-- Card 1: Supervisor -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-amber-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-              Supervisor Orchestrator
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded">LangGraph</span>
+  <!-- Citation Content Modal -->
+  <div id="citation-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-surface-container-lowest rounded-2xl max-w-3xl w-full border border-outline-variant/30 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 bg-surface-container-low border-b border-surface-container flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-xl">visibility</span>
+          <div>
+            <h3 class="text-sm font-semibold text-on-surface" id="citation-modal-title">Citation Content</h3>
+            <p class="text-xs text-secondary" id="citation-modal-subtitle">Source Grounding Data</p>
           </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Stateful cyclic state machine operating on shared <code>AgentState</code>. Evaluates analyst query intent, manages iteration counters (hard ceiling of 4 cycles), and dynamically delegates tasks to specialized sub-agents.
-          </p>
         </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: LangGraph Cyclic StateGraph • MemorySaver
-        </div>
+        <button onclick="closeCitationModal()" class="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
       </div>
-
-      <!-- Card 2: Vision Specialist -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-emerald-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              VisionAgent &amp; Analytics
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded">Gemini / GPT-4o</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            VLM prompt engineering with strict Pydantic JSON schema extraction. Deterministic Python visual analytics computes exact CAGR, YoY period-over-period growth, and outlier detection with zero LLM math hallucination.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: gemini-flash-lite-latest • GPT-4o • PIL Preprocessor
-        </div>
+      <div class="p-6 overflow-y-auto flex-1 bg-surface-container-lowest text-sm text-on-surface whitespace-pre-wrap font-body" id="citation-modal-content">
+        <!-- Text or Image injected here -->
       </div>
-
-      <!-- Card 3: SearchAgent & Self-RAG -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-blue-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-              SearchAgent &amp; Self-RAG
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded">Qdrant Vector DB</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Dense vector retrieval over 500-token chunks with 100-token overlap. Features an iterative Self-RAG relevance loop that grades retrieved text and autonomously rewrites queries if context is insufficient.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: Qdrant DB • Dense Embeddings • Self-RAG Grader
-        </div>
-      </div>
-
-      <!-- Card 4: SQLAgent -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-purple-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-              SQLAgent (Text-to-SQL)
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded">SQLite / Gemini</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Translates equity valuation queries into SQL to retrieve structured market metrics (stock prices, P/E ratios, market capitalization, 52-week ranges) with deterministic fallback rules.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: Text-to-SQL Generator • SQLite financial_data.db
-        </div>
-      </div>
-
-      <!-- Card 5: Ingestion Pipeline -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-indigo-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-              Multi-Modal Ingestion
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-indigo-100 text-indigo-900 px-1.5 py-0.5 rounded">PyMuPDF + FastAPI</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            High-fidelity PDF parsing extracting hierarchical text and embedded vector drawing figures (>100x100px), serving assets asynchronously through FastAPI endpoints (/api/v1/ingest, /api/v1/images).
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: PyMuPDF (fitz) • Semantic Chunker • FastAPI Uvicorn
-        </div>
-      </div>
-
-      <!-- Card 6: Safety & Observability -->
-      <div class="p-3 bg-surface-container-low rounded-xl border border-surface-container flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="font-bold text-rose-700 flex items-center gap-1 text-[13px]">
-              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-              Safety &amp; Telemetry
-            </span>
-            <span class="text-[10px] font-mono font-bold bg-rose-100 text-rose-900 px-1.5 py-0.5 rounded">Guardrails &amp; Traces</span>
-          </div>
-          <p class="text-secondary text-[11px] leading-relaxed">
-            Deterministic input guardrails prevent prompt injection and off-topic queries. Cross-modal verifier checks visual numbers against text context to prevent hallucinations, while Langfuse tracks latencies and tokens.
-          </p>
-        </div>
-        <div class="mt-2 pt-2 border-t border-surface-container-high/60 text-[10px] font-mono text-outline">
-          Engine: NeMo-style Guardrails • Langfuse Tracing Manager
-        </div>
+      <div class="p-3 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs font-label">
+        <span class="text-emerald-700 font-medium" id="citation-modal-score">Confidence Score: 100%</span>
+        <button onclick="closeCitationModal()" class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold">Done</button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Modal Footer -->
-<div class="p-3 bg-surface-container-low border-t border-surface-container flex items-center justify-between shrink-0">
-  <span class="text-[11px] text-secondary">Verified Test Suite: 85/85 Passed (100%) • 100% Grounded Benchmark</span>
-  <button onclick="closeDAGModal()" class="px-4 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors cursor-pointer">
-    Done
-  </button>
-</div>
-</div>
-</div>
+  <!-- Contextual Quick Action / Global Key Command Toast -->
+  <div id="global-toast"
+    class="fixed bottom-4 right-96 mr-4 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-3 text-xs z-40 hidden md:flex transition-all">
+    <div class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-emerald-400" id="toast-indicator"></span>
+      <span class="font-medium" id="toast-message">Swarm Idle</span>
+    </div>
+    <span class="text-outline-variant/60">•</span>
+    <span class="text-[11px] text-inverse-on-surface/80">Press <kbd
+        class="px-1.5 py-0.5 bg-surface-container-highest/30 rounded text-[10px] font-mono font-bold cursor-pointer"
+        onclick="document.getElementById('query-input').focus()">⌘K</kbd> to prompt</span>
+  </div>
 
-<!-- Contextual Quick Action / Global Key Command Toast -->
-<div id="global-toast" class="fixed bottom-4 right-6 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-3 text-xs z-40 hidden md:flex transition-all">
-<div class="flex items-center gap-1.5">
-<span class="w-2 h-2 rounded-full bg-emerald-400" id="toast-indicator"></span>
-<span class="font-medium" id="toast-message">Swarm Idle</span>
-</div>
-<span class="text-outline-variant/60">•</span>
-<span class="text-[11px] text-inverse-on-surface/80">Press <kbd class="px-1.5 py-0.5 bg-surface-container-highest/30 rounded text-[10px] font-mono font-bold cursor-pointer" onclick="document.getElementById('query-input').focus()">⌘K</kbd> to prompt</span>
-</div>
-
-<script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
+
 </html>

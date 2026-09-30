@@ -10,6 +10,7 @@ from app.services.pdf_parser import PDFParser
 from app.services.text_chunker import TextChunker
 from storage.vector_store import get_vector_store
 from storage.sql_db import get_financial_db
+from app.core.telemetry import get_telemetry_manager
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,9 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
             detail=f"Unsupported file format for '{filename}'. Only PDF files are supported.",
         )
 
+    telemetry = get_telemetry_manager()
+    trace_id = telemetry.create_trace(name="Ingest_Document", user_id="system")
+    
     try:
         logger.info(f"Receiving file upload for ingestion: '{filename}'")
         pdf_bytes = await file.read()
@@ -56,6 +60,27 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
         # 2. Extract embedded images & figures
         image_extractor = PDFImageExtractor()
         extracted_images = image_extractor.extract_images(pdf_bytes, pdf_name=filename)
+        
+        telemetry.log_event(
+            trace_id=trace_id,
+            name="PDF_Metadata_Parsed",
+            metadata={
+                "pdf_name": filename,
+                "size_bytes": len(pdf_bytes),
+                "total_pages": len(pages),
+                "images_found": len(extracted_images)
+            }
+        )
+
+        image_metadata = [
+            {"image_name": img.image_path.split('/')[-1], "path": img.image_path, "page": img.page_number}
+            for img in extracted_images
+        ]
+        telemetry.log_event(
+            trace_id=trace_id,
+            name="Images_Extracted",
+            metadata={"extracted_images": image_metadata}
+        )
 
         # 3. Chunk text semantically
         chunker = TextChunker()
@@ -81,7 +106,16 @@ async def ingest_document(file: UploadFile = File(...)) -> IngestResponse:
         try:
             db = get_financial_db()
             tables_by_page = [p.tables for p in pages]
-            db.ingest_pdf_tables(pdf_name=filename, tables_by_page=tables_by_page)
+            table_metadata = db.ingest_pdf_tables(pdf_name=filename, tables_by_page=tables_by_page)
+            
+            telemetry.log_event(
+                trace_id=trace_id,
+                name="Tables_Extracted_To_SQL",
+                metadata={
+                    "db_path": db.db_path,
+                    "tables_ingested": table_metadata
+                }
+            )
         except Exception as e:
             logger.warning(f"Could not ingest tabular data into SQL database: {e}")
 

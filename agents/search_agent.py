@@ -72,16 +72,10 @@ class SearchAgent:
         retrieved_docs = []
         citations = []
         total_score = 0.0
-        seen_snippets = set()
 
         for hit in hits:
             chunk_id = hit.get("chunk_id", "")
             text = hit.get("text", "")
-            norm_key = " ".join(text.split())[:75].lower()
-            if norm_key in seen_snippets:
-                continue
-            seen_snippets.add(norm_key)
-
             score = hit.get("score", 0.0)
             pdf_name = hit.get("pdf_name", "unknown.pdf")
             page_number = hit.get("page_number", 1)
@@ -104,6 +98,7 @@ class SearchAgent:
                 "pdf_name": pdf_name,
                 "page_number": page_number,
                 "section_title": section_title,
+                "text": text,
                 "snippet": text[:150] + "..." if len(text) > 150 else text,
                 "relevance_score": score,
             })
@@ -133,24 +128,12 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
 
     vector_store = state.get("vector_store") or get_vector_store(in_memory=False)
     trace_id = state.get("trace_id")
-    pdf_name = state.get("pdf_name")
-    logger.info(f"Executing search_agent_node for query: '{query}' (pdf_name: '{pdf_name}')")
+    logger.info(f"Executing search_agent_node for query: '{query}'")
     
     start_time = time.time()
     agent = SearchAgent(vector_store=vector_store)
-    result = agent.execute_search(query=query, top_k=5, pdf_name_filter=pdf_name)
-    
-    # If strict filter returned empty but we have an active pdf_name, check for matching base token
-    if not result.get("retrieved_docs") and pdf_name:
-        unfiltered = agent.execute_search(query=query, top_k=8)
-        import os
-        base_token = os.path.splitext(os.path.basename(pdf_name))[0].replace(" ", "_").lower()
-        matched = [d for d in unfiltered.get("retrieved_docs", []) if base_token in d.get("pdf_name", "").lower()]
-        if matched:
-            result["retrieved_docs"] = matched
-            result["citations"] = [c for c in unfiltered.get("citations", []) if base_token in c.get("pdf_name", "").lower()]
-            result["summary"] = f"Retrieved {len(matched)} relevant chunks scoped to '{pdf_name}'."
-            
+    pdf_name_filter = state.get("pdf_name")
+    result = agent.execute_search(query=query, top_k=5, pdf_name_filter=pdf_name_filter)
     elapsed = time.time() - start_time
 
     summary_text = result["summary"]

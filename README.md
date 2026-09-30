@@ -7,8 +7,9 @@
 [![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red.svg)](https://qdrant.tech/)
 [![Guardrails](https://img.shields.io/badge/Safety-Deterministic%20Guardrails-purple.svg)]()
 [![Langfuse](https://img.shields.io/badge/Observability-Langfuse-black.svg)](https://langfuse.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-85%2F85%20Passed%20(100%25)-brightgreen.svg)]()
-[![Benchmark](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/Tests-77%2F77%20Passed-brightgreen.svg)]()
+
+[![Benchmark Pass Rate](https://img.shields.io/badge/Benchmark-100%25%20Grounded-brightgreen.svg)]()
 
 > **OmniBrain** is an enterprise-grade, hallucination-resistant **Agentic Multi-Modal RAG (Retrieval-Augmented Generation)** platform designed for financial and quantitative research over complex enterprise PDFs containing financial statements, balance sheet tables, trend charts, bar graphs, and unstructured textual disclosures.
 
@@ -16,8 +17,11 @@
 
 ## 📌 Table of Contents
 - [Executive Overview & Problem Statement](#-executive-overview--problem-statement)
-- [Core Platform Capabilities](#-core-platform-capabilities)
-- [Enterprise Workflow: Quantitative Research](#-enterprise-workflow-quantitative-research)
+- [Enterprise Use Case: Quantitative Analyst Workflow](#-enterprise-use-case-quantitative-analyst-workflow)
+- [Team Pod Roles & Ownership](#-team-pod-roles--ownership)
+- [Multi-Modal Vision Specialist Architecture (Deep Dive)](#-multi-modal-vision-specialist-architecture-deep-dive)
+  - [2A. VLM Prompt & Vision Extraction Pipeline](#2a-vlm-prompt--vision-extraction-pipeline)
+  - [2B. Visual Analytics & Multi-Modal Tool Integration](#2b-visual-analytics--multi-modal-tool-integration)
 - [System Architecture](#-system-architecture)
 - [Multi-Modal Vision Specialist Deep Dive](#-multi-modal-vision-specialist-deep-dive)
   - [VLM Prompt & Extraction Pipeline](#vlm-prompt--extraction-pipeline)
@@ -27,7 +31,6 @@
   - [Dynamic Intent Classification & Routing](#dynamic-intent-classification--routing)
   - [Quantitative Vision Extraction & Grounding](#quantitative-vision-extraction--grounding)
 - [API Reference (FastAPI Backend)](#-api-reference-fastapi-backend)
-- [User Interfaces & Quantitative Workspaces](#-user-interfaces--quantitative-workspaces)
 - [Evaluation, Observability & Guardrails](#-evaluation-observability--guardrails)
 - [Repository Structure](#-repository-structure)
 - [Quickstart Guide](#-quickstart-guide)
@@ -52,18 +55,7 @@ Standard Retrieval-Augmented Generation (RAG) pipelines fail when applied to com
 
 ---
 
-## ⚡ Core Platform Capabilities
-
-| Capability Module | Architectural Scope | Primary Components & Services |
-| :--- | :--- | :--- |
-| **Multi-Modal Ingestion Pipeline** | Ingests complex multi-page financial filings; extracts raw text, section hierarchies, and embedded drawing/chart figures. | [`app/services/pdf_parser.py`](file:///d:/omnibrain/app/services/pdf_parser.py)<br>[`app/services/chunking_service.py`](file:///d:/omnibrain/app/services/chunking_service.py)<br>[`storage/vector_store.py`](file:///d:/omnibrain/storage/vector_store.py) |
-| **High-Performance FastAPI Scaffolding** | Asynchronous RESTful backend powering document uploads, static visual asset serving, and multi-agent execution streaming. | [`app/main.py`](file:///d:/omnibrain/app/main.py)<br>[`app/api/routes_ingest.py`](file:///d:/omnibrain/app/api/routes_ingest.py)<br>[`app/models/schemas.py`](file:///d:/omnibrain/app/models/schemas.py) |
-| **LangGraph Multi-Agent Orchestration** | Stateful cyclic graph orchestrated by an intelligent Supervisor Node ensuring dynamic sub-agent delegation and loop safety. | [`agents/supervisor.py`](file:///d:/omnibrain/agents/supervisor.py)<br>[`agents/search_agent.py`](file:///d:/omnibrain/agents/search_agent.py)<br>[`agents/self_rag.py`](file:///d:/omnibrain/agents/self_rag.py)<br>[`agents/vision_agent.py`](file:///d:/omnibrain/agents/vision_agent.py) |
-| **Quantitative Research Workspace** | Modern 3-panel analyst workspace displaying live agent traces, visual chart bounding-box overlays, and investment research memos. | [`frontend/`](file:///d:/omnibrain/frontend/) (`npm run dev`)<br>[`guardrails/guardrail_service.py`](file:///d:/omnibrain/guardrails/guardrail_service.py)<br>[`app/core/telemetry.py`](file:///d:/omnibrain/app/core/telemetry.py) |
-
----
-
-## 💼 Enterprise Workflow: Quantitative Research
+## 💼 Enterprise Use Case: Quantitative Analyst Workflow
 
 ```text
        ┌─────────────────────────────────────────────────────────┐
@@ -460,27 +452,11 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 🧪 Running Automated Benchmarks & Tests
 
-### Run Full Test Suite (85 Tests — 100% Pass Rate)
+### Run Full Test Suite (77 Tests)
 
 ```bash
 python -m pytest tests/ -v
 ```
-
-#### Test Suite Breakdown Across Modules:
-| Test Module | Test File Path | Tests Passed | Architectural Scope |
-| :--- | :--- | :--- | :--- |
-| **Qdrant Vector Store** | [`tests/test_vector_store.py`](file:///d:/omnibrain/tests/test_vector_store.py) | **6 / 6** | Dense embeddings, batch upsert, metadata filtering, on-disk fallback |
-| **Semantic Search Agent** | [`tests/test_search_agent.py`](file:///d:/omnibrain/tests/test_search_agent.py) | **3 / 3** | Vector query execution, score thresholding, node state transition |
-| **Self-RAG Module** | [`tests/test_self_rag.py`](file:///d:/omnibrain/tests/test_self_rag.py) | **5 / 5** | Document relevance grading, query rewriting, loop safety |
-| **Multi-Modal Ingestion** | [`tests/test_ingestion.py`](file:///d:/omnibrain/tests/test_ingestion.py) | **6 / 6** | PyMuPDF parsing, drawing extractor, semantic chunker, API routes |
-| **Vision & VLM Specialists** | [`tests/test_day2_vision.py`](file:///d:/omnibrain/tests/test_day2_vision.py) | **11 / 11** | VLM engine factory, chart JSON schema, crop box inference |
-| **Vision Agent Integrator** | [`tests/test_vision_agent.py`](file:///d:/omnibrain/tests/test_vision_agent.py) | **5 / 5** | Downstream LangGraph node, base64 encoding, memo formatting |
-| **Visual Analytics Engine** | [`tests/test_visual_analytics.py`](file:///d:/omnibrain/tests/test_visual_analytics.py) | **4 / 4** | CAGR formula, YoY deltas, Z-score outlier detection, volatility |
-| **Cross-Modal Verifier** | [`tests/test_cross_modal_verifier.py`](file:///d:/omnibrain/tests/test_cross_modal_verifier.py) | **4 / 4** | Token parsing, accounting numbers, discrepancy detection logic |
-| **Reasoning & Supervisor Audit** | [`tests/test_agents.py`](file:///d:/omnibrain/tests/test_agents.py) | **3 / 3** | Supervisor dynamic edge routing (SQL vs Vector vs Vision) |
-| **Cross-Modal Visual Tools** | [`tests/test_day4_visual_integration.py`](file:///d:/omnibrain/tests/test_day4_visual_integration.py) | **10 / 10** | Visual comparator, citation badges, overlay renderer, bridge tools |
-| **End-to-End Orchestration** | [`tests/test_end_to_end_multimodal.py`](file:///d:/omnibrain/tests/test_end_to_end_multimodal.py) | **3 / 3** | Fact-check loops, supervisor-to-memo pipeline execution |
-| **Total Test Suite** | *All modules combined* | **85 / 85 (100%)** | Full-stack & AI engineering verification |
 
 ### Run Standalone Multi-Modal Benchmark Suite
 ```bash
@@ -493,25 +469,7 @@ python eval/benchmark_runner.py
   "total_test_cases": 2,
   "passed_test_cases": 2,
   "pass_rate_percentage": 100.0,
-  "benchmark_status": "PASSED",
-  "test_case_results": [
-    {
-      "test_name": "Quarterly Revenue Bar Chart (Clean Grounding)",
-      "passed": true,
-      "grounding_score": 1.0,
-      "discrepancies_flagged": 0,
-      "derived_trends": ["upward"],
-      "latency_seconds": 0.0
-    },
-    {
-      "test_name": "Operating Margin Expansion with Discrepancy Detection",
-      "passed": true,
-      "grounding_score": 0.25,
-      "discrepancies_flagged": 1,
-      "derived_trends": ["upward"],
-      "latency_seconds": 0.0
-    }
-  ]
+  "benchmark_status": "PASSED"
 }
 ```
 

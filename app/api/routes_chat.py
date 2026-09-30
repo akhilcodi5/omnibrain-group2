@@ -1,8 +1,6 @@
 """Agent query and chat endpoints for LangGraph supervisor orchestration with NeMo Guardrails and Langfuse Telemetry."""
 
 import logging
-import os
-import re
 import time
 import urllib.parse
 from typing import Any, Dict, List, Optional
@@ -94,6 +92,12 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
             trace_id=trace_id,
             execution_time_seconds=elapsed,
         )
+        
+    telemetry.log_event(
+        trace_id=trace_id,
+        name="Guardrail_Passed",
+        metadata={"query": req.query, "applied_rails": input_check.applied_rails}
+    )
 
     # 3. Execute LangGraph Multi-Agent State Machine
     try:
@@ -109,27 +113,10 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
             else:
                 local_images.append(img)
 
-        # Document-Level Isolation: Determine active pdf_name and scope images
-        pdf_name = req.pdf_name
-        if not pdf_name and local_images:
-            for img in local_images:
-                match = re.search(r'(?:chart|table|img)_([A-Za-z0-9_\-]+?)_p\d+', img)
-                if match:
-                    pdf_name = match.group(1) + ".pdf"
-                    break
-
-        if pdf_name:
-            clean_token = os.path.splitext(os.path.basename(pdf_name))[0].replace(" ", "_").lower()
-            # Retain only images originating from the active PDF document
-            scoped_images = [img for img in local_images if clean_token in img.lower()]
-            if scoped_images:
-                local_images = scoped_images
-            logger.info(f"Scoped {len(local_images)} images to active document: '{pdf_name}'")
-
         initial_state = {
             "messages": [],
             "query": req.query,
-            "pdf_name": pdf_name,
+            "pdf_name": req.pdf_name,
             "next_agent": None,
             "retrieved_docs": [],
             "visual_evidence": [],
@@ -217,3 +204,24 @@ async def generate_investment_memo_endpoint(req: MemoGenerationRequest):
     except Exception as e:
         logger.error(f"Error generating investment memo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class TelemetryLogRequest(BaseModel):
+    action: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+@router.post("/telemetry/log_action")
+async def log_ui_action(req: TelemetryLogRequest):
+    """Log frontend UI interactions (like opening citations) to Langfuse/backend."""
+    logger.info(f"UI Action Logged: {req.action} | Metadata: {req.metadata}")
+    
+    telemetry = get_telemetry_manager()
+    try:
+        telemetry.log_event(
+            trace_id="ui_interaction_trace",
+            name=f"UI_{req.action}",
+            metadata=req.metadata
+        )
+    except Exception as e:
+        logger.warning(f"Failed to log UI action to Langfuse: {e}")
+            
+    return {"status": "ok"}

@@ -24,7 +24,8 @@ def test_chat_memo_endpoint():
     assert "Apex demonstrated strong operating leverage" in data["investment_memo_markdown"]
 
 
-def test_chat_query_endpoint():
+@pytest.mark.asyncio
+async def test_chat_query_endpoint():
     """Test POST /api/v1/chat/query multi-agent routing execution."""
     client = TestClient(app)
     payload = {

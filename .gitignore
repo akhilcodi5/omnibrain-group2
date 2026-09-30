@@ -81,7 +81,7 @@ frontend/dist/
 .vite/
 
 # For my branch(akhil)
-plan_and_my_role.md
+plan.md
 MEMORY.md
 prerequisite.md
 backend.log

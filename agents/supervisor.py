@@ -46,12 +46,12 @@ def supervisor_node(state: AgentState) -> Dict[str, Any]:
 
     if iteration >= 4:
         next_node = "synthesizer"
+    elif not has_search_run:
+        next_node = "search_agent"
     elif intent.requires_visual_agent and not has_vision_run:
         next_node = "vision_agent"
     elif any(k in query.lower() for k in ["price", "p/e", "market cap", "stock", "52-week", "ticker"]) and not has_sql_run:
         next_node = "sql_agent"
-    elif not has_search_run:
-        next_node = "search_agent"
     else:
         next_node = "synthesizer"
 
@@ -72,12 +72,6 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     logger.info("Executing synthesizer_node in LangGraph...")
     
     query = state.get("query", "")
-    messages = state.get("messages", [])
-    for m in messages:
-        if getattr(m, "type", "") == "human" or m.__class__.__name__ == "HumanMessage":
-            query = getattr(m, "content", query)
-            break
-
     raw_visual_evidence = state.get("visual_evidence", [])
     retrieved_docs = state.get("retrieved_docs", [])
     sql_results = state.get("sql_results", [])
@@ -94,23 +88,13 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
     text_snippets = [d.get("text", "") for d in retrieved_docs if isinstance(d, dict)]
     sql_dict = sql_results[0] if sql_results and isinstance(sql_results, list) else None
 
-    # Extract company name from state or metadata
-    company_name = state.get("pdf_name") or "Target Enterprise Entity"
-    import os
-    if company_name and company_name != "Target Enterprise Entity":
-        company_name = os.path.splitext(os.path.basename(company_name))[0].strip()
-    elif retrieved_docs and isinstance(retrieved_docs, list) and isinstance(retrieved_docs[0], dict):
+    # Extract company name from metadata
+    company_name = "Target Enterprise Entity"
+    if retrieved_docs and isinstance(retrieved_docs, list) and isinstance(retrieved_docs[0], dict):
         pdf_name = retrieved_docs[0].get("pdf_name", "")
         if pdf_name:
+            import os
             company_name = os.path.splitext(os.path.basename(pdf_name))[0].strip()
-
-    c_lower = company_name.lower()
-    if "nvidia" in c_lower or "nvda" in c_lower:
-        company_name = "NVIDIA Corporation (NVDA)"
-    elif "apple" in c_lower or "aapl" in c_lower:
-        company_name = "Apple Inc. (AAPL)"
-    elif "microsoft" in c_lower or "msft" in c_lower:
-        company_name = "Microsoft Corporation (MSFT)"
 
     # Synthesize Final Investment Memo
     start_time = time.time()
@@ -129,7 +113,7 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="LangGraphSupervisor",
             action="SynthesizeMemo",
-            model="gemini-1.5-pro",
+            model="gemini-3.5-flash-lite",
             input_data=query,
             output_data=final_memo[:300],
             prompt_tokens=450,
@@ -142,19 +126,9 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
         name="Synthesizer",
     )
 
-    # Assess overall grounding from verified evidence blocks
-    overall_grounded = state.get("is_grounded", True)
-    if visual_blocks:
-        has_critical = any(
-            b.verification_report and b.verification_report.critical_discrepancies
-            for b in visual_blocks
-        )
-        overall_grounded = not has_critical
-
     return {
         "messages": [ai_msg],
         "final_response": final_memo,
-        "is_grounded": overall_grounded,
         "next_agent": "END",
     }
 

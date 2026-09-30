@@ -36,19 +36,21 @@ class SQLAgent:
             return "SELECT * FROM stocks WHERE ticker = 'APEX' LIMIT 1;"
         return "SELECT * FROM stocks LIMIT 5;"
 
-    def generate_sql(self, query: str) -> str:
+    def generate_sql(self, query: str, trace_id: Optional[str] = None) -> str:
         """Map user query intent to SQL query using Gemini LLM."""
         if self.use_mock:
             return self._fallback_rule_sql(query)
-        import httpx
+        import google.generativeai as genai
         import os
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
+            logger.warning("GEMINI_API_KEY not found. Falling back to simple rule engine.")
             return self._fallback_rule_sql(query)
 
         try:
-            model_name = os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            genai.configure(api_key=api_key)
+            model_name = os.getenv("GEMINI_SQL_MODEL", "gemini-3.5-flash-lite")
+            model = genai.GenerativeModel(model_name)
             
             schema = '''
             Table: stocks
@@ -68,20 +70,21 @@ class SQLAgent:
             
             Question: {query}
             '''
+            
+            if trace_id:
+                telemetry = get_telemetry_manager()
+                telemetry.log_event(
+                    trace_id=trace_id,
+                    name="SQL_DB_Context",
+                    metadata={
+                        "db_path": self.db.db_path,
+                        "schema_provided": schema.strip()
+                    }
+                )
 
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 256}
-            }
-
-            with httpx.Client(timeout=4.0) as client:
-                res = client.post(url, json=payload)
-                res.raise_for_status()
-                data = res.json()
-                content = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-
+            response = model.generate_content(prompt)
+            sql = response.text.strip()
             # Clean up potential markdown formatting
-            sql = content
             if sql.startswith("```sql"):
                 sql = sql[6:]
             if sql.startswith("```"):
@@ -89,14 +92,14 @@ class SQLAgent:
             if sql.endswith("```"):
                 sql = sql[:-3]
             
-            return sql.strip() if sql.strip() else self._fallback_rule_sql(query)
+            return sql.strip()
         except Exception as e:
-            logger.warning(f"Gemini SQL generation fallback used: {e}")
+            logger.error(f"Gemini SQL generation error: {e}")
             return self._fallback_rule_sql(query)
 
-    def execute(self, query: str) -> Dict[str, Any]:
+    def execute(self, query: str, trace_id: Optional[str] = None) -> Dict[str, Any]:
         """Execute Text-to-SQL resolution and query execution."""
-        sql_statement = self.generate_sql(query)
+        sql_statement = self.generate_sql(query, trace_id=trace_id)
         logger.info(f"Generated SQL query: {sql_statement}")
         
         try:
@@ -142,7 +145,7 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
 
     start_time = time.time()
     agent = SQLAgent()
-    result = agent.execute(query)
+    result = agent.execute(query, trace_id=trace_id)
     elapsed = time.time() - start_time
 
     if trace_id:
@@ -150,7 +153,7 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="SQLAgent",
             action="GenerateSQL",
-            model=os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest"),
+            model=os.getenv("GEMINI_SQL_MODEL", "gemini-3.5-flash-lite"),
             input_data=query,
             output_data=result["summary"],
             prompt_tokens=400, # approximate

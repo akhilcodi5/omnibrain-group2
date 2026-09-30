@@ -122,9 +122,82 @@ class TelemetryManager:
                         "total_tokens": prompt_tokens + completion_tokens,
                     },
                 )
-                logger.info(f"Telemetry sent to Langfuse: Generation logged for agent={agent_name} action={action} (trace_id={trace_id})")
             except Exception as e:
                 logger.error(f"Langfuse generation logging error: {e}")
+                
+        # Always log payload explicitly to terminal
+        logger.info(
+            f"--- [AGENT STEP: {agent_name}] ---\n"
+            f"Action: {action}\n"
+            f"Input: {str(input_data)[:500] if input_data else 'None'}\n"
+            f"Output: {str(output_data)[:500] if output_data else 'None'}\n"
+            f"Tokens: {prompt_tokens} prompt / {completion_tokens} completion\n"
+            f"Latency: {round(latency_seconds, 3)}s\n"
+            f"Trace ID: {trace_id}\n"
+            f"--------------------------"
+        )
+
+    def log_span(
+        self,
+        trace_id: str,
+        name: str,
+        input_data: Optional[Any] = None,
+        output_data: Optional[Any] = None,
+        level: str = "DEFAULT",
+    ):
+        """Record a functional span (e.g., non-LLM python logic, DB extraction)."""
+        if self.is_enabled and self._langfuse_client:
+            try:
+                self._langfuse_client.span(
+                    trace_id=trace_id,
+                    name=name,
+                    input=input_data,
+                    output=output_data,
+                    level=level,
+                )
+            except Exception as e:
+                logger.error(f"Langfuse span logging error: {e}")
+
+        # Always log to terminal
+        logger.info(
+            f"--- [SPAN: {name}] ---\n"
+            f"Input: {str(input_data)[:500] if input_data else 'None'}\n"
+            f"Output: {str(output_data)[:500] if output_data else 'None'}\n"
+            f"Trace ID: {trace_id}\n"
+            f"--------------------------"
+        )
+
+    def log_event(
+        self,
+        trace_id: str,
+        name: str,
+        input_data: Optional[Any] = None,
+        output_data: Optional[Any] = None,
+        level: str = "DEFAULT",
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        """Record a point-in-time event (e.g., app startup, metadata extraction)."""
+        if self.is_enabled and self._langfuse_client:
+            try:
+                self._langfuse_client.event(
+                    trace_id=trace_id,
+                    name=name,
+                    input=input_data,
+                    output=output_data,
+                    metadata=metadata,
+                )
+            except Exception as e:
+                logger.error(f"Langfuse event logging error: {e}")
+                
+        # Always log to terminal
+        import json
+        meta_str = json.dumps(metadata, indent=2) if metadata else "{}"
+        logger.info(
+            f"--- [EVENT: {name}] ---\n"
+            f"Metadata:\n{meta_str}\n"
+            f"Trace ID: {trace_id}\n"
+            f"--------------------------"
+        )
 
     def log_evaluation_score(
         self,
