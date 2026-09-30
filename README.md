@@ -440,8 +440,9 @@ npm run dev
 
 **Start the FastAPI Backend**:
 ```bash
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app --reload-dir agents
 ```
+*(or run `python -m app.main`)*
 - *Quant Workspace (3-Panel UI): `http://localhost:8000/workspace`*
 - *Interactive API docs: `http://localhost:8000/docs`*
 

@@ -97,3 +97,15 @@ app.mount("/api/v1/images/extracted_images", StaticFiles(directory="storage/extr
 app.mount("/api/v1/images", StaticFiles(directory="storage/extracted_images"), name="extracted_images")
 
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        reload_dirs=["app", "agents"],
+    )
+
+
+
