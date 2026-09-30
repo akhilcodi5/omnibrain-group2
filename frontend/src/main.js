@@ -4,6 +4,7 @@ import { marked } from 'marked';
 
 let latestMemoMarkdown = 'No memo generated yet.';
 let currentUploadedImages = [];
+let currentUploadedPdfName = null;
 
 // Global Toast System
 export function showToast(msg, durationMs = 3000) {
@@ -145,14 +146,14 @@ export async function handleFileUpload(event) {
   if (!file) return;
 
   showToast(`Uploading ${file.name} to OmniBrain Ingest Pipeline...`);
-  
+
   // Unhide containers
   document.getElementById('active-doc-pill')?.classList.remove('hidden');
   document.getElementById('active-doc-pill')?.classList.add('flex');
   document.getElementById('doc-card-container')?.classList.remove('hidden');
   document.getElementById('corpus-tab-strip')?.classList.remove('hidden');
   document.getElementById('artifact-list-container')?.classList.remove('hidden');
-  
+
   const ocrContainer = document.getElementById('ocr-status-container');
   if (ocrContainer) {
     ocrContainer.classList.remove('hidden');
@@ -160,7 +161,7 @@ export async function handleFileUpload(event) {
     document.getElementById('ocr-status').textContent = 'OCR Pending';
     document.getElementById('ocr-status-icon').textContent = 'pending';
   }
-  
+
   const activeName = document.getElementById('active-doc-name');
   const activeBadge = document.getElementById('active-doc-badge');
   if (activeName) activeName.textContent = file.name;
@@ -182,7 +183,7 @@ export async function handleFileUpload(event) {
         activeBadge.className =
           'text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide';
       }
-      
+
       const ocrStatus = document.getElementById('ocr-status');
       if (ocrStatus) {
         ocrStatus.textContent = 'OCR Completed';
@@ -192,25 +193,26 @@ export async function handleFileUpload(event) {
       document.getElementById('active-doc-pages').textContent = `(${data.total_pages || 1} pgs)`;
       document.getElementById('doc-card-title').textContent = file.name;
       document.getElementById('doc-card-pgcount').textContent = `${data.total_pages || 1} Pgs`;
+      currentUploadedPdfName = file.name;
       currentUploadedImages = data.extracted_image_paths || [];
       const artifactContainer = document.getElementById('artifact-cards-wrapper');
-      
+
       let tableCount = 0;
       let chartCount = 0;
-      
+
       if (artifactContainer) {
         artifactContainer.innerHTML = '';
         currentUploadedImages.forEach((img, idx) => {
           const filename = img.split(/[/\\]/).pop(); // Handle both Windows backslashes and POSIX forward slashes
           const isTable = filename.startsWith('table_');
           const isChart = !isTable;
-          
+
           if (isTable) tableCount++;
           if (isChart) chartCount++;
-          
+
           const icon = isChart ? 'bar_chart' : 'table_chart';
           const label = isChart ? 'Extracted Chart' : 'Extracted Table';
-          
+
           artifactContainer.innerHTML += `
             <div class="bg-surface-container-lowest rounded-xl p-2.5 border border-outline-variant/30 shadow-xs hover:border-primary/40 transition-colors cursor-pointer group flex flex-col gap-2 artifact-card">
               <div class="flex items-center gap-2">
@@ -232,11 +234,11 @@ export async function handleFileUpload(event) {
       }
       const tabTables = document.getElementById('tab-tables');
       if (tabTables) {
-          tabTables.innerHTML = `<span class="material-symbols-outlined text-sm">table_chart</span><span>Tables (${tableCount})</span>`;
+        tabTables.innerHTML = `<span class="material-symbols-outlined text-sm">table_chart</span><span>Tables (${tableCount})</span>`;
       }
       const tabCharts = document.getElementById('tab-charts');
       if (tabCharts) {
-          tabCharts.innerHTML = `<span class="material-symbols-outlined text-sm">bar_chart</span><span>Charts (${chartCount})</span>`; 
+        tabCharts.innerHTML = `<span class="material-symbols-outlined text-sm">bar_chart</span><span>Charts (${chartCount})</span>`;
       }
       showToast(
         `✅ Ingestion complete: ${data.chunks_indexed ?? data.total_chunks ?? 0} chunks & ${data.images_extracted ?? data.total_images ?? 0} figures indexed!`
@@ -286,7 +288,7 @@ export async function executeAnalystQuery() {
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
+
   // Dynamically inject User Bubble
   const traceContainer = document.getElementById('chat-stream');
   if (traceContainer) {
@@ -315,7 +317,7 @@ export async function executeAnalystQuery() {
     traceContainer.insertAdjacentHTML('beforeend', userBubble + traceLoading);
     traceContainer.scrollTop = traceContainer.scrollHeight;
   }
-  
+
   const execBtn = document.getElementById('execute-btn');
   if (execBtn) {
     execBtn.disabled = true;
@@ -331,8 +333,9 @@ export async function executeAnalystQuery() {
     const response = await fetch('/api/v1/chat/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        query: query, 
+      body: JSON.stringify({
+        query: query,
+        pdf_name: currentUploadedPdfName,
         referenced_images: currentUploadedImages,
         thread_id: sessionId
       }),
@@ -365,7 +368,7 @@ export async function executeAnalystQuery() {
                   <span class="material-symbols-outlined text-[14px]">${result.is_grounded ? 'verified_user' : 'warning'}</span>
                   ${result.is_grounded ? '100% Grounded' : 'Unverified'}
                 </span>
-                <span class="text-secondary font-mono">Citations: ${result.citations ? result.citations.length : 0}</span>
+                <button onclick="openCitationsPanel(this.dataset.citations)" data-citations="${encodeURIComponent(JSON.stringify(result.citations || []))}" class="text-secondary font-mono hover:text-primary transition-colors cursor-pointer border-b border-dashed border-secondary hover:border-primary">Citations: ${result.citations ? result.citations.length : 0}</button>
                 <span class="text-secondary font-mono">${result.execution_time_seconds ? result.execution_time_seconds.toFixed(2) : elapsed}s</span>
               </div>
               
@@ -377,7 +380,7 @@ export async function executeAnalystQuery() {
           </div>
         </div>
       `;
-      
+
       if (traceContainer) {
         traceContainer.insertAdjacentHTML('beforeend', aiBubble);
         traceContainer.scrollTop = traceContainer.scrollHeight;
@@ -401,7 +404,7 @@ export async function executeAnalystQuery() {
 function showChatError(query, elapsed, errorMessage) {
   const activeTraceCard = document.getElementById('active-trace-card');
   if (activeTraceCard) activeTraceCard.remove();
-  
+
   const traceContainer = document.getElementById('chat-stream');
   if (traceContainer) {
     const errorBubble = `
@@ -434,3 +437,113 @@ window.showGraphDAGModal = showGraphDAGModal;
 window.closeDAGModal = closeDAGModal;
 window.handleFileUpload = handleFileUpload;
 window.executeAnalystQuery = executeAnalystQuery;
+
+function logTelemetry(action, metadata = {}) {
+  fetch('/api/v1/chat/telemetry/log_action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, metadata })
+  }).catch(console.error);
+}
+
+function openCitationsPanel(encodedCitations) {
+  try {
+    const citations = JSON.parse(decodeURIComponent(encodedCitations));
+    const container = document.getElementById('citations-list-container');
+    const panel = document.getElementById('citations-side-panel');
+    
+    container.innerHTML = '';
+    
+    citations.forEach((cit, idx) => {
+      const scoreVal = cit.relevance_score || cit.grounding_score || 1.0;
+      const score = (scoreVal * 100).toFixed(0);
+      let textContent = cit.text || cit.snippet || cit.executive_summary || JSON.stringify(cit, null, 2);
+      let title = cit.figure_title || cit.pdf_name || `Citation ${idx + 1}`;
+      
+      const card = document.createElement('div');
+      card.className = 'p-3 bg-surface border border-outline-variant/40 rounded-xl shadow-xs hover:border-primary/50 cursor-pointer transition-colors';
+      card.onclick = () => openCitationContent(textContent, title, score, cit);
+      
+      card.innerHTML = `
+        <div class="flex items-start gap-2 mb-2">
+          <span class="material-symbols-outlined text-primary text-base">format_quote</span>
+          <h4 class="text-xs font-semibold text-on-surface truncate">${title}</h4>
+        </div>
+        <p class="text-[11px] text-secondary line-clamp-3">${textContent}</p>
+        <div class="mt-2 pt-2 border-t border-surface-container flex justify-between items-center text-[10px] font-label">
+          <span class="text-emerald-700 font-medium">Faithfulness: ${score}%</span>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+    
+    panel.classList.remove('hidden');
+    // slight delay to allow display:block before translating
+    setTimeout(() => {
+      panel.classList.remove('translate-x-full');
+    }, 10);
+    
+    logTelemetry('open_citations_panel', { count: citations.length });
+  } catch (e) {
+    console.error('Failed to parse citations', e);
+  }
+}
+
+function closeCitationsPanel() {
+  const panel = document.getElementById('citations-side-panel');
+  panel.classList.add('translate-x-full');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+  }, 300);
+}
+
+function openCitationContent(content, title, score, rawData) {
+  const modal = document.getElementById('citation-modal');
+  document.getElementById('citation-modal-title').textContent = title;
+  document.getElementById('citation-modal-content').textContent = content;
+  document.getElementById('citation-modal-score').textContent = `Confidence Score: ${score}%`;
+  
+  modal.classList.remove('hidden');
+  
+  logTelemetry('open_citation_modal', { title, score });
+}
+
+function closeCitationModal() {
+  document.getElementById('citation-modal').classList.add('hidden');
+}
+
+function switchMainTab(tabId) {
+  const workspace = document.getElementById('workspace');
+  const aboutPage = document.getElementById('about-page');
+  const btnHome = document.getElementById('nav-home-btn');
+  const btnAbout = document.getElementById('nav-about-btn');
+
+  const activeClasses = ['text-primary', 'border-primary'];
+  const inactiveClasses = ['text-secondary', 'border-transparent', 'hover:text-on-surface', 'hover:border-surface-variant'];
+
+  if (tabId === 'home') {
+    workspace.classList.remove('hidden');
+    aboutPage.classList.add('hidden');
+    
+    btnHome.classList.add(...activeClasses);
+    btnHome.classList.remove(...inactiveClasses);
+    
+    btnAbout.classList.add(...inactiveClasses);
+    btnAbout.classList.remove(...activeClasses);
+  } else if (tabId === 'about') {
+    workspace.classList.add('hidden');
+    aboutPage.classList.remove('hidden');
+    
+    btnAbout.classList.add(...activeClasses);
+    btnAbout.classList.remove(...inactiveClasses);
+    
+    btnHome.classList.add(...inactiveClasses);
+    btnHome.classList.remove(...activeClasses);
+  }
+}
+
+window.openCitationsPanel = openCitationsPanel;
+window.closeCitationsPanel = closeCitationsPanel;
+window.openCitationContent = openCitationContent;
+window.closeCitationModal = closeCitationModal;
+window.switchMainTab = switchMainTab;

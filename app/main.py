@@ -8,14 +8,27 @@ from app.api.routes_chat import router as chat_router
 from app.api.routes_health import router as health_router
 from app.api.routes_ingest import router as ingest_router
 from app.api.routes_visual import router as visual_router
+from app.core.telemetry import get_telemetry_manager
 
 from dotenv import load_dotenv
+import logging
+
 load_dotenv()
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 app = FastAPI(
     title="OmniBrain: Agentic Multi-Modal RAG Orchestrator",
     description="Enterprise-grade Agentic Multi-Modal RAG API for financial document intelligence, visual analytics, and cross-modal reasoning.",
     version="0.1.0",
+)
+
+telemetry = get_telemetry_manager()
+sys_trace_id = telemetry.create_trace(name="System_Startup", user_id="system")
+telemetry.log_event(
+    trace_id=sys_trace_id,
+    name="App_Initialization",
+    metadata={"version": "0.1.0", "langfuse_enabled": telemetry.is_enabled},
+    level="DEFAULT"
 )
 
 # Configure CORS
