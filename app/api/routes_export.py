@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import tempfile
 from datetime import datetime
+from pathlib import Path
 
 # Attempt to import md2pdf
 try:
@@ -57,14 +58,10 @@ async def export_chat(req: ExportRequest):
             # Fallback to MD if PDF generation library is missing
             raise HTTPException(status_code=501, detail="PDF generation library 'md2pdf' is not installed.")
             
-        md_path = os.path.join(temp_dir, "temp.md")
         pdf_path = os.path.join(temp_dir, "export.pdf")
         
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(markdown_content)
-            
         try:
-            md2pdf(pdf_path, md_content=markdown_content)
+            md2pdf(Path(pdf_path), raw=markdown_content)
             return FileResponse(path=pdf_path, filename="OmniBrain_Export.pdf", media_type="application/pdf")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")

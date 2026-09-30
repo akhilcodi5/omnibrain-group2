@@ -594,8 +594,11 @@ async function exportChat(format) {
     a.download = `OmniBrain_Export_${new Date().toISOString().split('T')[0]}.${format}`;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }, 200);
     
     showToast(`${format.toUpperCase()} export downloaded successfully!`);
     logTelemetry('export_chat', { format, count: window.chatHistory.length });
