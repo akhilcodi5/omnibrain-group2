@@ -116,6 +116,7 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
         initial_state = {
             "messages": [],
             "query": req.query,
+            "pdf_name": req.pdf_name,
             "next_agent": None,
             "retrieved_docs": [],
             "visual_evidence": [],

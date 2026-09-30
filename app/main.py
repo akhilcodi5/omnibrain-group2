@@ -8,6 +8,7 @@ from app.api.routes_chat import router as chat_router
 from app.api.routes_health import router as health_router
 from app.api.routes_ingest import router as ingest_router
 from app.api.routes_visual import router as visual_router
+from app.api.routes_export import router as export_router
 from app.core.telemetry import get_telemetry_manager
 
 from dotenv import load_dotenv
@@ -45,6 +46,7 @@ app.include_router(health_router, prefix="/api/v1", tags=["Health"])
 app.include_router(ingest_router)
 app.include_router(visual_router)
 app.include_router(chat_router)
+app.include_router(export_router)
 
 
 @app.get("/")

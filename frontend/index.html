@@ -137,33 +137,56 @@
   <header
     class="bg-surface-container-lowest flex justify-between items-center w-full px-5 h-16 shrink-0 z-50 border-b border-surface-container shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
     <!-- Left Section: Brand & Context Switcher -->
-    <div class="flex items-center gap-6">
-      <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
-        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
-          <span class="material-symbols-outlined fill text-xl">hub</span>
+    <div class="flex-1 flex justify-start">
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
+          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
+            <span class="material-symbols-outlined fill text-xl">hub</span>
+          </div>
+          <span class="font-headline text-xl font-bold tracking-tight text-primary">OmniBrain</span>
+          <span class="font-label text-xs uppercase tracking-wider font-semibold text-secondary ml-1 bg-surface-container px-2 py-0.5 rounded">Quant</span>
         </div>
-        <span class="font-headline text-xl font-bold tracking-tight text-primary">OmniBrain</span>
-        <span
-          class="font-label text-xs uppercase tracking-wider font-semibold text-secondary ml-1 bg-surface-container px-2 py-0.5 rounded">Quant</span>
-      </div>
 
-      <!-- Active Ingest Document Status Pill -->
-      <div
-        class="hidden xl:flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 px-2.5 py-1 rounded-full text-xs"
-        id="active-doc-pill">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="material-symbols-outlined text-primary text-sm">picture_as_pdf</span>
-        <span class="font-medium text-on-surface" id="active-doc-name">No Document</span>
-        <span class="text-secondary" id="active-doc-pages"></span>
-        <span
-          class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide"
-          id="active-doc-badge">Processed</span>
+        <!-- Active Ingest Document Status Pill -->
+        <div class="hidden xl:flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/40 px-2.5 py-1 rounded-full text-xs" id="active-doc-pill">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="material-symbols-outlined text-primary text-sm">picture_as_pdf</span>
+          <span class="font-medium text-on-surface" id="active-doc-name">No Document</span>
+          <span class="text-secondary" id="active-doc-pages"></span>
+          <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-label text-[10px] font-semibold tracking-wide" id="active-doc-badge">Processed</span>
+        </div>
       </div>
     </div>
-    <!-- Navigation Links & Meta Info -->
-    <div class="flex items-center gap-4">
-      <button id="nav-home-btn" onclick="switchMainTab('home')" class="text-sm font-semibold text-primary border-b-2 border-primary pb-1 transition-colors">Home</button>
-      <button id="nav-about-btn" onclick="switchMainTab('about')" class="text-sm font-semibold text-secondary hover:text-on-surface border-b-2 border-transparent hover:border-surface-variant pb-1 transition-colors">About</button>
+    
+    <!-- Navigation Links & Meta Info (Centered) -->
+    <div class="flex-1 flex justify-center">
+      <div class="flex items-center gap-6">
+        <button id="nav-home-btn" onclick="switchMainTab('home')" class="text-sm font-semibold text-primary border-b-2 border-primary pb-1 transition-colors">Home</button>
+        <button id="nav-about-btn" onclick="switchMainTab('about')" class="text-sm font-semibold text-secondary hover:text-on-surface border-b-2 border-transparent hover:border-surface-variant pb-1 transition-colors">About</button>
+      </div>
+    </div>
+
+    <!-- Right Section: Export Dropdown -->
+    <div class="flex-1 flex justify-end">
+      <div class="relative inline-block text-left">
+        <div>
+          <button type="button" onclick="toggleExportMenu()" class="inline-flex justify-center w-full rounded-md border border-outline-variant/40 shadow-sm px-4 py-2 bg-surface-container-lowest text-sm font-medium text-on-surface hover:bg-surface-container-low focus:outline-none transition-colors" id="export-menu-button" aria-expanded="true" aria-haspopup="true">
+            <span class="material-symbols-outlined text-sm mr-2">download</span>
+            Export Chat
+            <span class="material-symbols-outlined text-sm ml-2">expand_more</span>
+          </button>
+        </div>
+        <div id="export-dropdown" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-surface-container-lowest ring-1 ring-black ring-opacity-5 hidden focus:outline-none z-50">
+          <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="export-menu-button">
+            <button onclick="exportChat('pdf')" class="text-on-surface hover:bg-surface-container-low hover:text-primary block px-4 py-2 text-sm w-full text-left flex items-center gap-2 transition-colors" role="menuitem">
+              <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Export as PDF
+            </button>
+            <button onclick="exportChat('md')" class="text-on-surface hover:bg-surface-container-low hover:text-primary block px-4 py-2 text-sm w-full text-left flex items-center gap-2 transition-colors" role="menuitem">
+              <span class="material-symbols-outlined text-sm">markdown</span> Export as MD
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 

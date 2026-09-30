@@ -5,6 +5,7 @@ import { marked } from 'marked';
 let latestMemoMarkdown = 'No memo generated yet.';
 let currentUploadedImages = [];
 let currentUploadedPdfName = null;
+window.chatHistory = [];
 
 // Global Toast System
 export function showToast(msg, durationMs = 3000) {
@@ -352,6 +353,12 @@ export async function executeAnalystQuery() {
       const score = result.is_grounded ? 100 : 0;
       const statElem = document.getElementById('faithfulness-stat');
       if (statElem) statElem.textContent = `${score}%`;
+      
+      window.chatHistory.push({
+        query: query,
+        response: result.final_response,
+        citations: result.citations || []
+      });
 
       // Create AI bubble
       const aiBubble = `
@@ -547,3 +554,65 @@ window.closeCitationsPanel = closeCitationsPanel;
 window.openCitationContent = openCitationContent;
 window.closeCitationModal = closeCitationModal;
 window.switchMainTab = switchMainTab;
+
+function toggleExportMenu() {
+  const dropdown = document.getElementById('export-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+}
+
+async function exportChat(format) {
+  toggleExportMenu(); // Close menu
+  
+  if (!window.chatHistory || window.chatHistory.length === 0) {
+    showToast('Chat history is empty. Nothing to export.');
+    return;
+  }
+  
+  showToast(`Generating ${format.toUpperCase()} export...`);
+  
+  try {
+    const res = await fetch('/api/v1/export/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        format: format,
+        chat_history: window.chatHistory
+      })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to export');
+    }
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `OmniBrain_Export_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    showToast(`${format.toUpperCase()} export downloaded successfully!`);
+    logTelemetry('export_chat', { format, count: window.chatHistory.length });
+  } catch (error) {
+    console.error('Export failed:', error);
+    showToast(`Failed to export: ${error.message}`);
+  }
+}
+
+window.toggleExportMenu = toggleExportMenu;
+window.exportChat = exportChat;
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (event) => {
+  const btn = document.getElementById('export-menu-button');
+  const dropdown = document.getElementById('export-dropdown');
+  if (btn && dropdown && !btn.contains(event.target) && !dropdown.contains(event.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
