@@ -648,6 +648,12 @@ function openCitationsPanel(encodedCitations) {
     setTimeout(() => {
       panel.classList.remove('translate-x-full');
     }, 10);
+
+    const toast = document.getElementById('global-toast');
+    if (toast) {
+      toast.classList.add('right-[25rem]');
+      toast.classList.remove('right-4');
+    }
     
     logTelemetry('open_citations_panel', { count: citations.length });
   } catch (e) {
@@ -661,6 +667,12 @@ function closeCitationsPanel() {
   setTimeout(() => {
     panel.classList.add('hidden');
   }, 300);
+
+  const toast = document.getElementById('global-toast');
+  if (toast) {
+    toast.classList.remove('right-[25rem]');
+    toast.classList.add('right-4');
+  }
 }
 
 function openCitationContent(content, title, score, rawData) {
