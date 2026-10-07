@@ -242,6 +242,20 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             
             logger.info(f"Optimized visual context: Filtered {len(referenced_images)} down to {len(filtered_images)} images based on {len(relevant_pages)} relevant text pages.")
             referenced_images = filtered_images
+            
+    trace_id = state.get("trace_id")
+    
+    # HARD CAP: Prevent indefinite loops/timeouts by limiting to top 3 most relevant images
+    if referenced_images and len(referenced_images) > 3:
+        logger.warning(f"Capping visual context from {len(referenced_images)} down to 3 images to prevent timeout.")
+        referenced_images = referenced_images[:3]
+        
+    if trace_id and referenced_images:
+        get_telemetry_manager().log_event(
+            trace_id=trace_id,
+            name="Vision_Images_Selected",
+            metadata={"selected_images": referenced_images, "query_context": query}
+        )
 
     if referenced_images:
         for idx, img_path in enumerate(referenced_images):
@@ -291,7 +305,7 @@ async def vision_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="VisionAgent",
             action="MultiModalAnalysis",
-            model="gemini-1.5-pro",
+            model="gemini-3.5-flash-lite",
             input_data=f"Query: {query}, Images: {referenced_images}",
             output_data=formatted_sections,
             prompt_tokens=800 * len(memo_blocks) if memo_blocks else 800,

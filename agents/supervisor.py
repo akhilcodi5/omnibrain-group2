@@ -113,7 +113,7 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="LangGraphSupervisor",
             action="SynthesizeMemo",
-            model="gemini-1.5-pro",
+            model="gemini-3.5-flash-lite",
             input_data=query,
             output_data=final_memo[:300],
             prompt_tokens=450,

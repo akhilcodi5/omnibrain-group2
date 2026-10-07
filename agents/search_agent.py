@@ -98,6 +98,7 @@ class SearchAgent:
                 "pdf_name": pdf_name,
                 "page_number": page_number,
                 "section_title": section_title,
+                "text": text,
                 "snippet": text[:150] + "..." if len(text) > 150 else text,
                 "relevance_score": score,
             })
@@ -131,7 +132,8 @@ def search_agent_node(state: AgentState) -> Dict[str, Any]:
     
     start_time = time.time()
     agent = SearchAgent(vector_store=vector_store)
-    result = agent.execute_search(query=query, top_k=5)
+    pdf_name_filter = state.get("pdf_name")
+    result = agent.execute_search(query=query, top_k=5, pdf_name_filter=pdf_name_filter)
     elapsed = time.time() - start_time
 
     summary_text = result["summary"]

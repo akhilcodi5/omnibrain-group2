@@ -1,3 +1,5 @@
+apple
+
 Extract the 'Net sales by reportable segment' table. Compute the year-over-year percentage change for iPhone and Services revenue between 2022 and 2023. Did Services growth offset the decline in iPhone sales?
 
 Management claims in the MD&A section that Services net sales increased in 2023. Verify if the exact percentage or dollar amount of this increase mentioned in the text perfectly matches the data in the Consolidated Statement of Operations table.
@@ -5,3 +7,14 @@ Management claims in the MD&A section that Services net sales increased in 2023.
 What was Apple's total Net Income and Gross Margin in 2023 according to the financial statements? Based on the text, what are the primary risk factors management attributes to any changes in gross margin?
 
 Find the total R&D (Research and Development) expense in the financial tables for 2023. Compare this figure against any mentions of R&D spending in the executive summary text. Are there any numerical discrepancies?
+
+
+nvidia
+
+According to the Condensed Consolidated Statements of Cash Flows, what was the total cash provided by operating activities for the twelve months ended January 25, 2026?
+
+Analyze the trend in Gaming revenue performance between Q3 FY26 and Q4 FY26 versus its year-over-year growth. What explanation does management provide for the quarter-over-quarter decline?
+
+In the Reconciliation of GAAP to Non-GAAP Outlook section at the end of the document, what line items connect GAAP Gross Margin directly to Non-GAAP Gross Margin, and what footnote rule applies to Q1 FY27 Non-GAAP metrics?
+
+Compare the Research and Development stock-based compensation expense between Q4 FY26 and Q4 FY25 as shown in Note (B). By how much did it increase?

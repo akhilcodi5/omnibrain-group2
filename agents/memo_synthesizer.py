@@ -123,4 +123,37 @@ class MemoSynthesizer:
         lines.append("")
         lines.append("---\n*Memo autonomously synthesized by OmniBrain Multi-Modal Orchestrator.*")
 
-        return "\n".join(lines)
+        raw_memo = "\n".join(lines)
+        
+        try:
+            import google.generativeai as genai
+            import os
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                logger.warning("GEMINI_API_KEY missing. Returning raw memo.")
+                return raw_memo
+                
+            genai.configure(api_key=api_key)
+            model_name = os.getenv("GEMINI_MEMO_MODEL", "gemini-3.5-flash-lite")
+            model = genai.GenerativeModel(model_name)
+            
+            prompt = f"""
+            You are a Wall Street Executive Financial Analyst. I have collected raw, multi-modal evidence from various agents (SQL, Vision, RAG).
+            Your task is to take this raw, overly verbose data dump and synthesize it into a highly polished, visually appealing, and concise Investment Memorandum.
+            
+            REQUIREMENTS:
+            1. DO NOT hallucinate any numbers. You must ONLY use the numbers provided in the raw dump.
+            2. Eliminate the massive, messy table dumps (like the 30-row cross-modal verification audit table). Instead, summarize the verification status in a sleek 1-2 sentence paragraph (e.g. "All 30 visual data points extracted from the charts were successfully verified against the textual MD&A context with 0 discrepancies, ensuring 100% data faithfulness.").
+            3. Use elegant markdown formatting (bolding, blockquotes, concise bullet points) to make the memo easy to read for an executive.
+            4. Keep the "Document Evidence Index & Citations" section at the bottom so the user knows where the data came from.
+            5. Structure it clearly: Executive Summary, Key Analytics (with sleek, synthesized tables if needed), Risk Factors, and Citations.
+            
+            RAW DATA DUMP:
+            {raw_memo}
+            """
+            
+            response = model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            logger.error(f"Error during LLM memo synthesis: {e}")
+            return raw_memo

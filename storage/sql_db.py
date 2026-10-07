@@ -114,56 +114,7 @@ class FinancialDatabase:
         """Dynamically ingest extracted 2D PDF tables into SQLite."""
         import re
         clean_pdf_name = re.sub(r'[^a-zA-Z0-9_]', '_', os.path.splitext(os.path.basename(pdf_name))[0]).lower()
-        
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            for page_idx, tables in enumerate(tables_by_page):
-                for tbl_idx, table in enumerate(tables):
-                    if not table or len(table) < 2:
-                        continue
-                        
-                    # Clean headers
-                    raw_headers = [str(h).strip() if h else f"col_{i}" for i, h in enumerate(table[0])]
-                    headers = []
-                    for h in raw_headers:
-                        clean_h = re.sub(r'[^a-zA-Z0-9_]', '_', h).lower()
-                        clean_h = re.sub(r'^_+|_+$', '', clean_h)
-                        if not clean_h or clean_h[0].isdigit():
-                            clean_h = f"col_{clean_h}"
-                        headers.append(clean_h)
-                        
-                    # Ensure unique headers
-                    seen = {}
-                    unique_headers = []
-                    for h in headers:
-                        if h in seen:
-                            seen[h] += 1
-                            unique_headers.append(f"{h}_{seen[h]}")
-                        else:
-                            seen[h] = 0
-                            unique_headers.append(h)
-                    
-                    table_name = f"tbl_{clean_pdf_name}_p{page_idx+1}_{tbl_idx+1}"
-                    
-                    # Create table
-                    cols_def = ", ".join([f"{h} TEXT" for h in unique_headers])
-                    cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({cols_def})")
-                    
-                    # Insert rows
-                    insert_sql = f"INSERT INTO {table_name} VALUES ({','.join(['?']*len(unique_headers))})"
-                    for row in table[1:]:
-                        # Pad row if shorter than headers
-                        padded_row = [str(cell) if cell is not None else "" for cell in row]
-                        while len(padded_row) < len(unique_headers):
-                            padded_row.append("")
-                        padded_row = padded_row[:len(unique_headers)]
-                        cursor.execute(insert_sql, padded_row)
-            conn.commit()
-
-    def ingest_pdf_tables(self, pdf_name: str, tables_by_page: List[List[List[Optional[str]]]]):
-        """Dynamically ingest extracted 2D PDF tables into SQLite."""
-        import re
-        clean_pdf_name = re.sub(r'[^a-zA-Z0-9_]', '_', os.path.splitext(os.path.basename(pdf_name))[0]).lower()
+        table_metadata = []
         
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -207,7 +158,15 @@ class FinancialDatabase:
                             padded_row.append("")
                         padded_row = padded_row[:len(unique_headers)]
                         cursor.execute(insert_sql, padded_row)
+                        
+                    table_metadata.append({
+                        "page_number": page_idx + 1,
+                        "table_name": table_name,
+                        "columns": unique_headers,
+                        "rows_inserted": len(table[1:])
+                    })
             conn.commit()
+        return table_metadata
 
 
     def execute_query(self, sql_query: str) -> List[Dict[str, Any]]:

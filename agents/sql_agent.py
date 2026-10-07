@@ -36,7 +36,7 @@ class SQLAgent:
             return "SELECT * FROM stocks WHERE ticker = 'APEX' LIMIT 1;"
         return "SELECT * FROM stocks LIMIT 5;"
 
-    def generate_sql(self, query: str) -> str:
+    def generate_sql(self, query: str, trace_id: Optional[str] = None) -> str:
         """Map user query intent to SQL query using Gemini LLM."""
         if self.use_mock:
             return self._fallback_rule_sql(query)
@@ -49,7 +49,7 @@ class SQLAgent:
 
         try:
             genai.configure(api_key=api_key)
-            model_name = os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest")
+            model_name = os.getenv("GEMINI_SQL_MODEL", "gemini-3.5-flash-lite")
             model = genai.GenerativeModel(model_name)
             
             schema = '''
@@ -70,6 +70,17 @@ class SQLAgent:
             
             Question: {query}
             '''
+            
+            if trace_id:
+                telemetry = get_telemetry_manager()
+                telemetry.log_event(
+                    trace_id=trace_id,
+                    name="SQL_DB_Context",
+                    metadata={
+                        "db_path": self.db.db_path,
+                        "schema_provided": schema.strip()
+                    }
+                )
 
             response = model.generate_content(prompt)
             sql = response.text.strip()
@@ -86,9 +97,9 @@ class SQLAgent:
             logger.error(f"Gemini SQL generation error: {e}")
             return self._fallback_rule_sql(query)
 
-    def execute(self, query: str) -> Dict[str, Any]:
+    def execute(self, query: str, trace_id: Optional[str] = None) -> Dict[str, Any]:
         """Execute Text-to-SQL resolution and query execution."""
-        sql_statement = self.generate_sql(query)
+        sql_statement = self.generate_sql(query, trace_id=trace_id)
         logger.info(f"Generated SQL query: {sql_statement}")
         
         try:
@@ -134,7 +145,7 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
 
     start_time = time.time()
     agent = SQLAgent()
-    result = agent.execute(query)
+    result = agent.execute(query, trace_id=trace_id)
     elapsed = time.time() - start_time
 
     if trace_id:
@@ -142,7 +153,7 @@ def sql_agent_node(state: AgentState) -> Dict[str, Any]:
             trace_id=trace_id,
             agent_name="SQLAgent",
             action="GenerateSQL",
-            model=os.getenv("GEMINI_SQL_MODEL", "gemini-flash-latest"),
+            model=os.getenv("GEMINI_SQL_MODEL", "gemini-3.5-flash-lite"),
             input_data=query,
             output_data=result["summary"],
             prompt_tokens=400, # approximate

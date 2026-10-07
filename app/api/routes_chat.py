@@ -92,6 +92,12 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
             trace_id=trace_id,
             execution_time_seconds=elapsed,
         )
+        
+    telemetry.log_event(
+        trace_id=trace_id,
+        name="Guardrail_Passed",
+        metadata={"query": req.query, "applied_rails": input_check.applied_rails}
+    )
 
     # 3. Execute LangGraph Multi-Agent State Machine
     try:
@@ -110,6 +116,7 @@ async def query_agent_orchestrator(req: ChatQueryRequest):
         initial_state = {
             "messages": [],
             "query": req.query,
+            "pdf_name": req.pdf_name,
             "next_agent": None,
             "retrieved_docs": [],
             "visual_evidence": [],
@@ -197,3 +204,24 @@ async def generate_investment_memo_endpoint(req: MemoGenerationRequest):
     except Exception as e:
         logger.error(f"Error generating investment memo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class TelemetryLogRequest(BaseModel):
+    action: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+@router.post("/telemetry/log_action")
+async def log_ui_action(req: TelemetryLogRequest):
+    """Log frontend UI interactions (like opening citations) to Langfuse/backend."""
+    logger.info(f"UI Action Logged: {req.action} | Metadata: {req.metadata}")
+    
+    telemetry = get_telemetry_manager()
+    try:
+        telemetry.log_event(
+            trace_id="ui_interaction_trace",
+            name=f"UI_{req.action}",
+            metadata=req.metadata
+        )
+    except Exception as e:
+        logger.warning(f"Failed to log UI action to Langfuse: {e}")
+            
+    return {"status": "ok"}

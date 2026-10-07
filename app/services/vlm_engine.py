@@ -48,30 +48,40 @@ class BaseVisionEngine(abc.ABC):
 
 
 def _clean_and_parse_json(content: str) -> Dict[str, Any]:
-    """Safely extracts and parses JSON from VLM output, handling markdown blocks and bracket boundaries."""
+    """Safely extracts and parses JSON from VLM output, handling markdown blocks and partial truncation."""
+    import re
     if not content or not content.strip():
         return {}
+        
     cleaned = content.strip()
-    # Strip markdown code fencing if present
-    if cleaned.startswith("```"):
-        lines = cleaned.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        cleaned = "\n".join(lines).strip()
-
+    
+    # Try regex markdown block extraction first
+    match = re.search(r'```(?:json)?\s*(.*?)\s*(?:```|$)', cleaned, re.DOTALL)
+    if match:
+        cleaned = match.group(1).strip()
+        
     try:
         return json.loads(cleaned)
     except (json.JSONDecodeError, TypeError):
-        # Fallback to finding outermost JSON object brackets
+        # Auto-repair partial truncation
         start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start != -1 and end != -1 and start < end:
+        if start != -1:
+            repaired = cleaned[start:]
+            # Close unclosed strings
+            if repaired.count('"') % 2 != 0:
+                repaired += '"'
+            
+            # Simple bracket balancing (assuming flat-ish JSON like the ExtractedChartData schema)
+            open_braces = repaired.count('{')
+            close_braces = repaired.count('}')
+            if open_braces > close_braces:
+                repaired += '}' * (open_braces - close_braces)
+                
             try:
-                return json.loads(cleaned[start:end + 1])
+                return json.loads(repaired)
             except Exception as e:
-                logger.debug(f"Outermost bracket JSON parse fallback failed: {e}")
+                logger.debug(f"Auto-repair parse failed: {e}")
+                
         logger.error(f"Failed to parse valid JSON from VLM output: {content[:200]}")
         return {"raw_text": content, "error": "Invalid JSON response"}
 

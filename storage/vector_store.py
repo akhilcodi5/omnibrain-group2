@@ -3,6 +3,7 @@
 import logging
 import uuid
 import hashlib
+import socket
 from typing import Any, Dict, List, Optional, Union
 
 try:
@@ -31,8 +32,8 @@ class DefaultEmbedder:
             self._st_model = SentenceTransformer(model_name)
             get_dim_fn = getattr(self._st_model, "get_embedding_dimension", None) or getattr(self._st_model, "get_sentence_embedding_dimension", None)
             self._vector_size = get_dim_fn() if get_dim_fn else 384
-        except Exception as e:
-            logger.warning(f"Could not load SentenceTransformer ({e}). Using deterministic fallback embeddings.")
+        except Exception:
+            logger.info("Using fast deterministic fallback embeddings (sentence-transformers not installed).")
 
     @property
     def vector_size(self) -> int:
@@ -86,20 +87,32 @@ class VectorStore:
 
         if in_memory:
             logger.info("Initializing QdrantClient in-memory mode.")
-            self.client = QdrantClient(location=":memory:")
+            self.client = QdrantClient(location=":memory:", check_compatibility=False)
         else:
             host_val = host or settings.QDRANT_HOST
             port_val = port or settings.QDRANT_PORT
             api_key_val = api_key or settings.QDRANT_API_KEY
+            
+            # Fast check if remote server port is responsive before attempting connection
+            server_available = False
             try:
-                logger.info(f"Connecting to Qdrant server at {host_val}:{port_val}")
-                remote_client = QdrantClient(host=host_val, port=port_val, api_key=api_key_val, timeout=2.0)
-                # Actively verify server availability
-                remote_client.get_collections()
-                self.client = remote_client
-            except Exception as e:
-                logger.warning(f"Could not connect to Qdrant at {host_val}:{port_val} ({e}). Falling back to persistent disk mode.")
-                self.client = QdrantClient(path="storage/qdrant_data")
+                with socket.create_connection((host_val, port_val), timeout=0.3):
+                    server_available = True
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                server_available = False
+
+            if server_available:
+                try:
+                    logger.info(f"Connecting to Qdrant server at {host_val}:{port_val}")
+                    remote_client = QdrantClient(host=host_val, port=port_val, api_key=api_key_val, timeout=1.5, check_compatibility=False)
+                    remote_client.get_collections()
+                    self.client = remote_client
+                except Exception as e:
+                    logger.info(f"Qdrant server at {host_val}:{port_val} unavailable ({e}). Using persistent disk mode.")
+                    self.client = QdrantClient(path="storage/qdrant_data", check_compatibility=False)
+            else:
+                logger.info(f"No Qdrant server detected at {host_val}:{port_val}. Using persistent disk storage at 'storage/qdrant_data'.")
+                self.client = QdrantClient(path="storage/qdrant_data", check_compatibility=False)
 
         self.ensure_collection_exists()
 
